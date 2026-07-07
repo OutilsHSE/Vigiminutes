@@ -85,7 +85,7 @@ select.pick{font-family:Inter;font-size:12.5px;padding:6px 8px;border:1px solid 
   <header class="band">
     <div class="mark">CDES · HSE</div>
     <h1>Analyseur de planning</h1>
-    <p>Dépose le planning de l'année, choisis la <strong>semaine</strong> à analyser : l'appli garde les chantiers et bateaux actifs sur cette période, l'IA classe les chantiers selon ta consigne, et tu envoies les deux listes dans le classeur.</p>
+    <p>Dépose le planning de l'année, choisis la <strong>semaine</strong> à analyser : l'appli garde les chantiers et bateaux actifs sur cette période (avec personnel, hors fret), puis rapproche les Vigiminutes reçues.</p>
   </header>
 
   <section class="card">
@@ -117,15 +117,8 @@ select.pick{font-family:Inter;font-size:12.5px;padding:6px 8px;border:1px solid 
     <div class="step">
       <div class="num">03</div>
       <div>
-        <h2>Ta consigne pour les chantiers</h2>
-        <p class="hint">En français : ce qui compte, ce qui ne compte pas.</p>
-        <textarea id="rule">Garde les chantiers opérationnels de terrain (dragage, faucardage, curage, génie écologique, ramassage). Exclus le fret et les prestations de transport.</textarea>
-      </div>
-    </div>
-    <div class="step">
-      <div class="num">04</div>
-      <div>
         <h2>Analyse</h2>
+        <p class="hint">Garde les chantiers actifs avec du personnel ; les « FRET » sont exclus automatiquement. Tu peux tout basculer à la main.</p>
         <div class="actions">
           <button class="btn primary" id="run" disabled>Analyser la période</button>
           <span class="note" id="cnt" style="margin:0"></span>
@@ -232,13 +225,16 @@ if(WEBHOOK_URL && WEBHOOK_URL.indexOf("http")===0) $("#hook").value=WEBHOOK_URL;
 const overlap=(it,du,au)=> it.d1 && it.d2 && it.d1<=au && it.d2>=du;
 function fallback(rule){const rx=/fret|transport|location/i;chantiers.forEach(c=>{c.keep=!rx.test(c.nom);c.why=c.keep?"chantier terrain":"fret / transport";});}
 
-async function analyse(){
+function analyse(){
   const du=toDate($("#du").value), au=toDate($("#au").value);
   if(!du||!au||du>au){alert("Choisis une période valide (Du avant Au).");return;}
-  $("#err").style.display="none"; run.disabled=true; run.innerHTML='<span class="spin"></span>Analyse…';
+  $("#err").style.display="none";
   chantiers=rawCh.filter(c=>overlap(c,du,au)).map(c=>{
     const crew=(c.mo||[]).some(m=>overlap(m,du,au));
-    return {nom:c.nom,d1:c.d1,d2:c.d2,crew,keep:crew,why:crew?"":"aucun nom/prénom sur la période"};
+    const fret=/fret/i.test(c.nom);
+    const keep=crew && !fret;
+    const why = !crew ? "aucun nom/prénom sur la période" : (fret ? "fret (exclu auto)" : "chantier de terrain");
+    return {nom:c.nom,d1:c.d1,d2:c.d2,crew,keep,why};
   });
   materiel=rawMat.filter(m=>overlap(m,du,au));
   bateaux=BOATS.map(b=>{
@@ -246,17 +242,8 @@ async function analyse(){
     const hit=materiel.find(m=>{const nm=norm(m.nom);return keys.some(k=>nm.indexOf(k)>=0||k.indexOf(nm)>=0);});
     return {nom:b.n,present:!!hit,d1:hit?hit.d1:null,d2:hit?hit.d2:null,keep:true};
   });
-  const rule=$("#rule").value.trim();
-  const withCrew=chantiers.filter(c=>c.crew);
-  if(withCrew.length===0){render(du,au);run.disabled=false;run.textContent="Relancer l'analyse";return;}
-  const list=withCrew.map((c,i)=>i+": "+c.nom).join("\n");
-  const sys="Tu es un assistant HSE chez CDES. Pour chaque chantier, décide COMPTER (opérationnel terrain) ou EXCLURE selon la consigne. Réponds UNIQUEMENT en JSON compact : {\"r\":[{\"i\":0,\"keep\":true,\"why\":\"...\"}]} . 'why' = 6 mots max.";
-  const usr="Consigne :\n"+rule+"\n\nChantiers :\n"+list;
-  try{
-    let t=await groqJSON(sys,usr);
-    (JSON.parse(t).r||[]).forEach(o=>{const c=withCrew[o.i];if(c){c.keep=!!o.keep;c.why=(o.why||"").slice(0,40);}});
-  }catch(e){const rx=/fret|transport|location/i;withCrew.forEach(c=>{c.keep=!rx.test(c.nom);c.why=c.keep?"chantier terrain":"fret / transport";});$("#err").style.display="block";$("#err").textContent="IA indisponible — règle simple appliquée (fret/transport exclus). Ajuste à la main si besoin.";}
-  render(du,au); run.disabled=false; run.textContent="Relancer l'analyse";
+  render(du,au);
+  run.textContent="Relancer l'analyse";
 }
 run.addEventListener("click",analyse);
 
@@ -309,15 +296,13 @@ $("#loadVigis").addEventListener("click",async()=>{
   $("#loadVigis").textContent="Chargement…"; $("#vgcount").textContent="";
   try{
     const all=await jsonp(url);
-    const vigis=all.filter(v=>{
-      const okSect=CHANTIER_SECTEURS.indexOf(norm(v.secteur))>=0;
-      const d=toDate(v.date); const inWk=(!du||!au||!d)?true:(d>=du&&d<=au);
-      return okSect&&inWk;
-    });
-    window.__vigis=vigis;
-    $("#vgcount").textContent=vigis.length+" Vigiminutes reçues (secteurs chantiers) sur la période";
-    $("#vglist").innerHTML="<table><thead><tr><th>Date</th><th>Secteur</th><th>Chantier (saisi par le collaborateur)</th></tr></thead><tbody>"+
-      vigis.map(v=>`<tr class="row"><td class="period">${v.date||""}</td><td>${v.secteur||""}</td><td class="cname">${v.chantier||""}</td></tr>`).join("")+"</tbody></table>";
+    const dansSemaine=v=>{const d=toDate(v.date); return (!du||!au||!d)?true:(d>=du&&d<=au);};
+    const toutes=all.filter(dansSemaine);                                   // toutes les Vigiminutes de la semaine
+    const chantiersVigis=toutes.filter(v=>CHANTIER_SECTEURS.indexOf(norm(v.secteur))>=0); // pour le rapprochement
+    window.__vigisAll=toutes; window.__vigis=chantiersVigis;
+    $("#vgcount").textContent=toutes.length+" Vigiminutes reçues (dont "+chantiersVigis.length+" sur secteurs chantiers)";
+    $("#vglist").innerHTML="<table><thead><tr><th>Date</th><th>Secteur</th><th>Chantier / Bateau (saisi)</th></tr></thead><tbody>"+
+      toutes.map(v=>`<tr class="row"><td class="period">${v.date||""}</td><td>${v.secteur||""}</td><td class="cname">${v.chantier||""}</td></tr>`).join("")+"</tbody></table>";
   }catch(e){$("#vgcount").textContent="Échec de lecture — vérifie l'URL et que le webhook a bien été redéployé.";}
   $("#loadVigis").textContent="Charger les Vigiminutes reçues";
 });
@@ -378,4 +363,3 @@ function renderRappro(){
 }
 </script>
 </body>
-</html>
