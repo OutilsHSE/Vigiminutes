@@ -71,7 +71,14 @@ tr.excluded td.cname{color:var(--muted);text-decoration:line-through}
 .conf.man{background:var(--boat-bg);color:var(--boat)}
 select.pick{font-family:Inter;font-size:12.5px;padding:6px 8px;border:1px solid var(--line);border-radius:8px;background:#fff;color:var(--ink);max-width:280px}
 .cov{display:flex;gap:10px;flex-wrap:wrap;margin:12px 0 4px}
-.manq{font-size:12.5px;color:var(--excl);margin-top:6px}
+.manq{font-size:12.5px;color:var(--excl);margin-top:10px;line-height:1.7}
+.addrow{display:flex;gap:8px;margin-top:10px;max-width:520px}
+.addrow input{flex:1;border:1px solid var(--line);border-radius:9px;padding:9px 12px;font-family:Inter;font-size:13.5px;background:#FBFAF7}
+.addrow input:focus{outline:2px solid var(--teal-bright);outline-offset:1px;border-color:transparent}
+.bilan{display:flex;align-items:center;gap:18px;background:var(--navy);color:#fff;border-radius:14px;padding:18px 24px;margin:16px 0 4px}
+.bilan-pct{font-family:"Space Grotesk";font-weight:700;font-size:46px;line-height:1}
+.bilan-lbl{font-family:"Space Grotesk";font-size:16px;font-weight:600;line-height:1.35}
+.bilan-lbl span{font-family:Inter;font-weight:400;font-size:13px;color:#C6D3DF}
 .err{background:var(--excl-bg);color:var(--excl);border-radius:10px;padding:10px 14px;font-size:13.5px;margin-top:12px;display:none}
 .note{color:var(--muted);font-size:12.5px;margin-top:14px}
 .send{display:grid;grid-template-columns:1fr auto;gap:10px;align-items:end;margin-top:6px}
@@ -148,6 +155,7 @@ select.pick{font-family:Inter;font-size:12.5px;padding:6px 8px;border:1px solid 
     <div class="panel-title" style="margin-top:28px"><span class="dot" style="background:var(--teal-bright)"></span>Rapprochement Exploitation</div>
     <p class="note" style="margin-top:2px">L'IA relie chaque Vigiminute reçue à un chantier actif. Vérifie les lignes en couleur (orange/rouge) et corrige au menu déroulant : relier, changer, ou « aucun ».</p>
     <div class="actions"><button class="btn primary" id="rapprocher">Rapprocher avec l'IA</button><span class="note" id="rpinfo" style="margin:0"></span></div>
+    <div class="addrow"><input type="text" id="newChantier" placeholder="Ajouter un chantier absent du planning…"><button class="btn ghost" id="addChantier">Ajouter</button></div>
     <div id="rapproResult" style="margin-top:12px;overflow-x:auto"></div>
   </section>
 </div>
@@ -319,32 +327,54 @@ function groqJSON(sys,usr){return new Promise((resolve,reject)=>{
   document.body.appendChild(s);
 });}
 let RAP_ACTIFS=[];
+const STOP=new Set(["bief","biefs","pour","avec","dans","chantier","faucardage","dragage","curage","prestation","complementaire","campagne","zone","humide","bassin","marche","intervention","partie","canal","berges","sortie","terres","migennes","spot","2026","2025","2024","numero","des","les","une","sur","par","non","affecte","arrachage","plante","ramassage"]);
+function motsCles(s){return norm(s).replace(/[^a-z0-9 ]/g," ").split(/\s+/).filter(w=>w.length>=4 && !STOP.has(w));}
+function preMatch(nom){
+  const mv=motsCles(nom); if(!mv.length) return -1;
+  for(let ci=0;ci<RAP_ACTIFS.length;ci++){const mc=motsCles(RAP_ACTIFS[ci].nom); if(mv.some(w=>mc.indexOf(w)>=0)) return ci;}
+  return -1;
+}
 $("#rapprocher").addEventListener("click",async()=>{
   const vigis=window.__vigis||[];
   RAP_ACTIFS=chantiers.filter(c=>c.keep);
   if(!vigis.length){alert("Charge d'abord les Vigiminutes reçues.");return;}
   if(!RAP_ACTIFS.length){alert("Analyse d'abord le planning (les chantiers actifs).");return;}
   $("#rapprocher").textContent="Rapprochement…"; $("#rpinfo").textContent="";
-  vigis.forEach(v=>{v.match=-1;v.conf=0;v.manuel=false;});
-  const chList=RAP_ACTIFS.map((c,i)=>i+": "+c.nom).join("\n");
-  const vgList=vigis.map((v,i)=>i+": "+(v.chantier||"")).join("\n");
-  const sys="Tu es un assistant HSE chez CDES. On te donne des CHANTIERS actifs numérotés et des VIGIMINUTES reçues numérotées (nom de chantier saisi par un collaborateur, souvent abrégé ou géographique). Pour chaque Vigiminute, trouve le chantier actif correspondant, par nom OU par localisation géographique (ex. 'SIAH Sarcelles'='Sarcelles' ; 'Faucardage Ardennes versant Meuse'='Rethel'). Donne une confiance 0-100. Si aucun ne correspond, c vaut -1. Réponds UNIQUEMENT en JSON : {\"m\":[{\"v\":0,\"c\":3,\"conf\":90}]}";
-  const usr="CHANTIERS actifs :\n"+chList+"\n\nVIGIMINUTES reçues :\n"+vgList;
-  try{
-    const t=await groqJSON(sys,usr);
-    (JSON.parse(t).m||[]).forEach(o=>{const v=vigis[o.v]; if(v){v.match=(o.c>=0&&o.c<RAP_ACTIFS.length)?o.c:-1; v.conf=Math.max(0,Math.min(100,parseInt(o.conf)||0));}});
-  }catch(e){
-    vigis.forEach(v=>{const vn=norm(v.chantier);let best=-1,bs=0;RAP_ACTIFS.forEach((c,ci)=>{const cn=norm(c.nom);if(vn&&(cn.indexOf(vn)>=0||vn.indexOf(cn)>=0)){best=ci;bs=55;}});v.match=best;v.conf=bs;});
-    $("#rpinfo").textContent=(e.message==="cle-absente"?"Clé Groq absente":"IA indisponible")+" — rapprochement approximatif, à vérifier.";
+  vigis.forEach(v=>{v.match=-1;v.conf=0;v.manuel=false;v.auto=false;});
+  const idxTereos=RAP_ACTIFS.findIndex(c=>norm(c.nom).indexOf("tereos")>=0);
+  const reste=[];
+  vigis.forEach(v=>{
+    if(idxTereos>=0 && norm(v.secteur).indexOf("tereos")>=0){ v.match=idxTereos; v.auto=true; return; }   // TEREOS auto par secteur
+    const pm=preMatch(v.chantier); if(pm>=0){ v.match=pm; v.auto=true; return; }                          // pré-match par mot commun
+    reste.push(v);
+  });
+  if(reste.length){
+    const chList=RAP_ACTIFS.map((c,i)=>i+": "+c.nom).join("\n");
+    const vgList=reste.map((v,i)=>i+": "+(v.chantier||"")).join("\n");
+    const sys="Tu es un assistant HSE chez CDES. On te donne des CHANTIERS actifs numérotés et des VIGIMINUTES reçues numérotées (nom de chantier saisi par un collaborateur, souvent court ou géographique). Pour chaque Vigiminute, trouve le chantier actif correspondant. Raisonne d'abord par nom ou mot commun, puis par PROXIMITÉ GÉOGRAPHIQUE : une commune, un cours d'eau ou un lieu-dit peut désigner un chantier dont l'intitulé cite une commune voisine du même secteur (ex. 'Roanne' est proche de 'Briennon'/'Cornillon' dans la Loire ; 'Sarcelles'='SIAH Sarcelles'). Donne une confiance 0-100 (haute si nom commun, moyenne si déduction géographique). Si vraiment aucun ne correspond, c vaut -1. Réponds UNIQUEMENT en JSON : {\"m\":[{\"v\":0,\"c\":3,\"conf\":90}]}";
+    const usr="CHANTIERS actifs :\n"+chList+"\n\nVIGIMINUTES à rapprocher :\n"+vgList;
+    try{
+      const t=await groqJSON(sys,usr);
+      (JSON.parse(t).m||[]).forEach(o=>{const v=reste[o.v]; if(v){v.match=(o.c>=0&&o.c<RAP_ACTIFS.length)?o.c:-1; v.conf=Math.max(0,Math.min(100,parseInt(o.conf)||0));}});
+    }catch(e){
+      reste.forEach(v=>{const pm=preMatch(v.chantier); v.match=pm; v.conf=pm>=0?55:0;});
+      $("#rpinfo").textContent="IA indisponible — rapprochement approximatif, à vérifier.";
+    }
   }
   renderRappro(); $("#rapprocher").textContent="Relancer le rapprochement";
+});
+$("#addChantier").addEventListener("click",()=>{
+  const nom=$("#newChantier").value.trim(); if(!nom) return;
+  const c={nom,keep:true,crew:true,why:"ajouté manuellement",d1:null,d2:null,manuelAjout:true};
+  chantiers.push(c); if(RAP_ACTIFS.indexOf(c)<0) RAP_ACTIFS.push(c);
+  $("#newChantier").value=""; renderRappro();
 });
 function coverage(){
   const covered=new Set(); (window.__vigis||[]).forEach(v=>{if(v.match>=0) covered.add(v.match);});
   const manquants=RAP_ACTIFS.map((c,i)=>i).filter(i=>!covered.has(i)).map(i=>RAP_ACTIFS[i].nom);
   return {recues:covered.size, attendues:RAP_ACTIFS.length, manquants};
 }
-function confClass(v){ if(v.manuel) return["man","manuel"]; if(v.match<0) return["lo","aucun"]; if(v.conf>=80) return["hi",v.conf+"%"]; if(v.conf>=50) return["mid",v.conf+"% à vérifier"]; return["lo",v.conf+"% à vérifier"]; }
+function confClass(v){ if(v.manuel) return["man","manuel"]; if(v.auto) return["hi","auto"]; if(v.match<0) return["lo","aucun"]; if(v.conf>=80) return["hi",v.conf+"%"]; if(v.conf>=50) return["mid",v.conf+"% à vérifier"]; return["lo",v.conf+"% à vérifier"]; }
 function renderRappro(){
   const vigis=window.__vigis||[];
   const opts=sel=>'<option value="-1"'+(sel<0?" selected":"")+'>— aucun —</option>'+RAP_ACTIFS.map((c,i)=>'<option value="'+i+'"'+(sel===i?" selected":"")+'>'+(c.nom||"").replace(/"/g,"&quot;")+'</option>').join("");
@@ -355,11 +385,12 @@ function renderRappro(){
       '<td><span class="conf '+cc[0]+'">'+cc[1]+'</span></td></tr>';});
   html+='</tbody></table>';
   const cov=coverage(); const pct=cov.attendues?Math.round(cov.recues/cov.attendues*100):0;
-  html+='<div class="cov"><span class="tag k">'+cov.recues+' chantiers couverts</span><span class="tag n">'+cov.attendues+' actifs</span><span class="tag b">Exploitation '+pct+'%</span></div>';
-  if(cov.manquants.length) html+='<div class="manq"><strong>Chantiers manquants :</strong> '+cov.manquants.join(" · ")+'</div>';
+  html+='<div class="bilan"><div class="bilan-pct">'+pct+'%</div><div class="bilan-lbl">Réalisation Exploitation<br><span>'+cov.recues+' / '+cov.attendues+' chantiers couverts</span></div></div>';
+  if(cov.manquants.length) html+='<div class="manq"><strong>Chantiers manquants ('+cov.manquants.length+') :</strong> '+cov.manquants.join(" · ")+'</div>';
   $("#rapproResult").innerHTML=html;
-  $("#rapproResult").querySelectorAll("select.pick").forEach(s=>s.addEventListener("change",()=>{const v=vigis[+s.dataset.i];v.match=parseInt(s.value);v.manuel=true;renderRappro();}));
+  $("#rapproResult").querySelectorAll("select.pick").forEach(s=>s.addEventListener("change",()=>{const v=vigis[+s.dataset.i];v.match=parseInt(s.value);v.manuel=true;v.auto=false;renderRappro();}));
   window.__exploitation={recues:cov.recues,attendues:cov.attendues};
 }
 </script>
 </body>
+</html>
