@@ -161,11 +161,9 @@ select.pick{font-family:Inter;font-size:12.5px;padding:6px 8px;border:1px solid 
 
 <script>
 /* ============================================================= */
-/*  CLÉ IA GROQ — colle ta clé (gsk_...) entre les guillemets :  */
-const GROQ_KEY = "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";
-const GROQ_MODEL = "llama-3.3-70b-versatile";
 /*  URL DU WEBHOOK — colle ton URL (…/exec) entre les guillemets : */
-const WEBHOOK_URL = "https://script.google.com/macros/s/AKfycbzdDgaxaWnhCQZ_PptD_SHnINqtEE9kU6k923fGZEIYXQb0zzo0c0D9A5s0lJs-guqk_g/exec";
+const WEBHOOK_URL = "COLLE_TON_URL_WEBHOOK_ICI";
+/*  (Aucune clé IA ici : elle est cachée côté webhook.)          */
 /* ============================================================= */
 const PLANNING_DEMO = "Nom;D\u00e9but;Fin;Type\n1.2 BORDEAUX / CIVRAC;2024-01-01;2027-01-03;\n      Pelle 145-40;2026-04-22;2026-08-13;Mat\u00e9riel\n      Pelle 830-64;2026-04-22;2026-07-17;Mat\u00e9riel\n2024 06 09 RCE Moulins de Sault et Devrault;2024-07-26;2026-08-22;\n      KRINCKET Lucas heure;2026-06-25;2026-07-04;Main d'oeuvre\n      KRINCKET Ludovic;2026-06-15;2026-07-04;Main d'oeuvre\n      Morooka 7 (MST110CR);2026-06-15;2026-07-02;Mat\u00e9riel\n      Pelle 160-17;2026-06-22;2026-07-02;Mat\u00e9riel\nBC N\u00b0 01  Dragage des deux darses du Port de Nancy;2026-05-04;2026-07-06;\n      DOURLEN Maryline;2026-05-26;2026-07-11;Main d'oeuvre\n      DRECOURT Francis;2026-05-26;2026-07-11;Main d'oeuvre\n      DRECOURT Murielle;2026-05-27;2026-07-11;Main d'oeuvre\n      HOET Geoffrey;2026-06-16;2026-07-07;Main d'oeuvre\n      NOISIEZ David;2026-05-26;2026-07-11;Main d'oeuvre\n      PARANT Jim;2026-06-01;2026-07-11;Main d'oeuvre\n      PONTHIEU Magda;2026-05-26;2026-07-11;Main d'oeuvre\n      PONTHIEU Patrick;2026-05-26;2026-07-11;Main d'oeuvre\n      S\u00e9bastien Laffort;2026-06-22;2026-07-11;Main d'oeuvre\n      4cl01;2026-05-15;2026-07-11;Mat\u00e9riel\n      8cl13;2026-05-20;2026-07-11;Mat\u00e9riel\n      8cl45;2026-05-20;2026-07-11;Mat\u00e9riel\n      Andorra;2026-05-11;2026-07-11;Mat\u00e9riel\n      Bateau non affect\u00e9;2026-06-10;2026-07-11;Mat\u00e9riel\n      Comeback;2026-05-18;2026-07-11;Mat\u00e9riel\n      Conada;2026-05-18;2026-07-11;Mat\u00e9riel\n      Pelle 160-56;2026-05-20;2026-07-11;Mat\u00e9riel\n      Pelle 350-23;2026-05-21;2026-07-11;Mat\u00e9riel\n      Pirate;2026-05-18;2026-07-11;Mat\u00e9riel\n      Trucker;2026-05-19;2026-07-11;Mat\u00e9riel\nBC N\u00b0 12 Faucardage et ramassage sur le canal des Ardennes versant Meuse et Aisne;2026-06-19;2026-07-30;\n      LE SENECHAL Morgan;2026-06-30;2026-07-18;Main d'oeuvre\n      Faucardeur n\u00b028 Vicoin;2026-06-30;2026-07-24;Mat\u00e9riel\nBC N\u00b0 2025-02 Faucardage CRD Bief n\u00b02 de Cornillon et BIef n\u00b0 3 de Briennon;2026-03-02;2026-09-18;\n      DUBESSET Ludovic;2026-06-29;2026-07-30;Main d'oeuvre\n      MOULIER Thierry;2026-06-09;2026-07-30;Main d'oeuvre\n      YACEI Kamel;2026-06-09;2026-08-13;Main d'oeuvre\n      ZORZI R\u00e9gis;2026-06-29;2026-07-04;Main d'oeuvre\n      faucardeur n\u00b026 Le Var;2026-06-09;2026-08-14;Mat\u00e9riel\n      LE BOURGOGNE;2026-06-09;2026-08-14;Mat\u00e9riel\nBC N\u00b0 2026-00007093 Faucardage du Lac Kir avec faucardeuse moissonneuse et barge;2026-06-10;2026-09-18;\n      DICKO Mamadou;2026-06-16;2026-07-09;Main d'oeuvre\n      La Marne - Faucardeur ramasseur 4;2026-06-16;2026-07-09;Mat\u00e9riel\n      Pelle 160-21;2026-06-17;2026-07-09;Mat\u00e9riel\nBC N\u00b0 2026-01 CSO Bief de partage;2026-05-25;2026-08-22;\n      CROIZER Lo\u00efc;2026-06-30;2026-07-24;Main d'oeuvre\n      DRUAIS Ludovic;2026-06-18;2026-07-23;Main d'oeuvre\n      HUREL Lucas;2026-06-18;2026-07-21;Main d'oeuvre\n      4cl01;2026-06-22;2026-07-24;Mat\u00e9riel\n      8cl12;2026-06-22;2026-07-24;Mat\u00e9riel\n      8cl17;2026-06-22;2026-07-24;Mat\u00e9riel\n      Barge 11 - 30m3;2026-06-22;2026-07-24;Mat\u00e9riel\n      Barges non affect\u00e9;2026-06-22;2026-07-24;Mat\u00e9riel\n      Barges non affect\u00e9;2026-06-22;2026-07-24;Mat\u00e9riel\n      CDES 2;2026-06-22;2026-07-24;Mat\u00e9riel\n      Pelle 160-45;2026-06-22;2026-07-24;Mat\u00e9riel\n      Pelle 360-41;2026-06-22;2026-07-24;Mat\u00e9riel\nBC N\u00b0 2026-01 Prestation de ramassage du bief 114/115 y de migennes au bief 54y de v\u00e9narey les laume;2026-04-24;2026-07-15;\n      BOUCQ Thierry;2026-04-30;2026-08-04;Main d'oeuvre\n      Truxor T50-E;2026-04-28;2026-08-28;Mat\u00e9riel\nBC N\u00b0 2026-03 Faucardage CSO Bief 11,17 et une partie du 10,13,16 et 22;2026-06-15;2026-08-17;\n      GUERRERO Fr\u00e9d\u00e9ric;2026-06-30;2026-07-16;Main d'oeuvre\n      HURIAUX Fr\u00e9d\u00e9ric;2026-06-30;2026-07-30;Main d'oeuvre\n      La Vilaine;2026-06-30;2026-07-31;Mat\u00e9riel\nBC N\u00b0 4702734445 Campagne de sortie des terres du Bassin B8 TEREOS 2026;2025-12-23;2027-01-08;\n      CANU Florian;2026-06-16;2026-08-22;Main d'oeuvre\n      CHABERT Cyril;2026-04-23;2026-09-26;Main d'oeuvre\n      CHABERT Cyril;2026-05-28;2026-10-02;Main d'oeuvre\n      DUBLICQ Olivier;2026-04-27;2026-09-03;Main d'oeuvre\n      8cl15;2026-04-22;2026-09-26;Mat\u00e9riel\n      8cl25 ponton pieux;2026-04-22;2026-09-26;Mat\u00e9riel\n      8cl26;2026-04-22;2026-09-26;Mat\u00e9riel\n      8cl28;2026-04-22;2026-09-26;Mat\u00e9riel\n      8cl29;2026-04-22;2026-09-26;Mat\u00e9riel\n      8cl32;2026-04-22;2026-09-26;Mat\u00e9riel\n      Pelle 160-16;2026-05-05;2026-08-05;Mat\u00e9riel\n      Pelle 350-53 Tereos;2026-04-22;2026-09-26;Mat\u00e9riel\nBC N\u00b003202625025CS Prestation compl\u00e9mentaire pour arrachage de plante Myriophylle;2026-06-01;2026-08-15;\n      DEFACHELLES Julien;2026-07-01;2026-07-17;Main d'oeuvre\nBERGES JOUY LE MOUTIER - SMBO;2026-06-01;2026-09-20;\n      LAFFONT Franck;2026-06-29;2026-07-09;Main d'oeuvre\n      LAFROGNE Hugo;2026-06-22;2026-07-09;Main d'oeuvre\n      8cl19;2026-06-22;2026-07-09;Mat\u00e9riel\n      8cl22;2026-06-22;2026-07-09;Mat\u00e9riel\n      8cl33;2026-06-22;2026-07-09;Mat\u00e9riel\n      Pelle 210-55;2026-06-22;2026-07-09;Mat\u00e9riel\n      Pelle 329-25;2026-06-22;2026-07-09;Mat\u00e9riel\n      Pieu E (rivi\u00e8re);2026-06-22;2026-07-09;Mat\u00e9riel\n      Tonga;2026-06-22;2026-07-09;Mat\u00e9riel\nCOMPENSATION ZONE HUMIDE - BARRAGE DE BEAULIEU;2026-06-01;2027-02-28;\n      GUILLERMIC Mathis;2026-06-16;2026-07-11;Main d'oeuvre\n      MARCHOIS Brice;2026-06-29;2026-07-11;Main d'oeuvre\n      4 tracteurs ;2026-06-17;2026-07-08;Mat\u00e9riel\n      Pelle 160-66;2026-06-16;2026-07-11;Mat\u00e9riel\n      Pelle 350-68;2026-06-16;2026-07-11;Mat\u00e9riel\nDOMAINE DE SUSCINIO - Arrachage manuel;2026-06-15;2026-12-19;\n      Int\u00e9rimaire non affect\u00e9;2026-07-02;2026-07-10;Main d'oeuvre\n      Int\u00e9rimaire non affect\u00e9;2026-07-02;2026-07-10;Main d'oeuvre\n      Int\u00e9rimaire non affect\u00e9;2026-07-02;2026-07-10;Main d'oeuvre\n      LOPES Alex;2026-06-30;2026-07-07;Main d'oeuvre\nFAUCARDAGE CD 80 - Intervention 1;2026-04-08;2026-10-31;\n      GRANDVAL L\u00e9o;2026-04-27;2026-07-11;Main d'oeuvre\n      TRICOT Bertrand;2026-04-27;2026-07-11;Main d'oeuvre\n      Barge 14 - 30m3;2026-04-27;2026-07-11;Mat\u00e9riel\n      Barge 17 - 30m3;2026-05-05;2026-07-10;Mat\u00e9riel\n      Barge 7 - 30m3;2026-04-27;2026-07-11;Mat\u00e9riel\n      CDES 3;2026-04-27;2026-07-11;Mat\u00e9riel\n      Faucardeur n\u00b027 Le Verdon;2026-04-27;2026-07-10;Mat\u00e9riel\n      Le Blavet;2026-04-30;2026-07-11;Mat\u00e9riel\nFRET SPOT FD 2026;2025-12-23;2027-03-04;\n      AMAND Steffy;2026-04-22;2026-07-31;Main d'oeuvre\n      DOURLEN Jeremy;2026-04-22;2026-08-01;Main d'oeuvre\n      LEM;2026-04-22;2026-08-08;Mat\u00e9riel\nFRET SPOT PETERSON 2026;2026-04-06;2026-12-31;\n      DARTOIS Eric;2026-04-27;2026-07-30;Main d'oeuvre\n      Tchikiboum;2026-04-27;2026-08-08;Mat\u00e9riel\nLA ROCHELLE 2026 MARCHE 25MP127;2026-05-11;2026-08-08;\n      CHEVAL Nicolas;2026-05-27;2026-07-09;Main d'oeuvre\n      FRIGUEL Nicolas;2026-05-14;2026-07-09;Main d'oeuvre\n      HUGUEVILLE Maxence;2026-05-25;2026-07-08;Main d'oeuvre\n      8cl04 ponton pieux;2026-06-02;2026-07-11;Mat\u00e9riel\n      8cl13;2026-05-26;2026-07-11;Mat\u00e9riel\n      8cl16;2026-05-26;2026-07-11;Mat\u00e9riel\n      8cl21;2026-05-21;2026-07-11;Mat\u00e9riel\n      Barge 15 - 100m3;2026-05-26;2026-07-11;Mat\u00e9riel\n      Barge 16 -  100m3;2026-05-26;2026-07-11;Mat\u00e9riel\n      Barge 19 - Barge 100 m3;2026-05-26;2026-07-11;Mat\u00e9riel\n      CDES 5;2026-05-26;2026-07-11;Mat\u00e9riel\n      Pelle 360-34;2026-05-26;2026-07-11;Mat\u00e9riel\n      Pelle 830-49;2026-05-26;2026-07-11;Mat\u00e9riel\nRCE MOULIN DE LESSIER;2026-01-12;2026-10-10;\n      COMPAIN Camille;2026-05-21;2026-07-11;Main d'oeuvre\n      IDEZ Morgan;2026-06-15;2026-07-04;Main d'oeuvre\n      Hitachi EG70R;2026-05-13;2026-07-24;Mat\u00e9riel\n      Pelle 160-58;2026-05-13;2026-07-23;Mat\u00e9riel\n      Pelle 8t-65;2026-05-13;2026-07-24;Mat\u00e9riel\nRCE SIAH SARCELLES;2025-11-07;2026-12-19;\n      GOULETTE Bastien;2026-04-23;2026-08-11;Main d'oeuvre\n      M\u00c9AUDE Fr\u00e9d\u00e9ric;2026-06-29;2026-07-04;Main d'oeuvre\n      Morooka MST110CR;2026-04-22;2026-08-28;Mat\u00e9riel\n      Pelle 140-30;2026-04-23;2026-08-28;Mat\u00e9riel\n      Pelle 210-62;2026-05-29;2026-08-28;Mat\u00e9riel\nRestauration \u00e9cologique des berges du Bassin des Moulinets \u00e0 EAUBONNE;2026-01-26;2026-11-14;\n      CAILLIERET J\u00e9r\u00f4me;2026-04-22;2026-07-04;Main d'oeuvre\n      Int\u00e9rimaire x2;2026-06-23;2026-07-04;Main d'oeuvre";
 const BOATS=[{n:"Trucker"},{n:"Le Lem",a:"LEM"},{n:"Comeback"},{n:"Conada"},{n:"Pirate"},{n:"Tchikiboum"},{n:"JPPH"},{n:"Caliméro"}];
@@ -255,16 +253,9 @@ async function analyse(){
   const sys="Tu es un assistant HSE chez CDES. Pour chaque chantier, décide COMPTER (opérationnel terrain) ou EXCLURE selon la consigne. Réponds UNIQUEMENT en JSON compact : {\"r\":[{\"i\":0,\"keep\":true,\"why\":\"...\"}]} . 'why' = 6 mots max.";
   const usr="Consigne :\n"+rule+"\n\nChantiers :\n"+list;
   try{
-    if(!GROQ_KEY || GROQ_KEY.indexOf("gsk_")!==0) throw new Error("cle-absente");
-    const res=await fetch("https://api.groq.com/openai/v1/chat/completions",{method:"POST",
-      headers:{"Content-Type":"application/json","Authorization":"Bearer "+GROQ_KEY},
-      body:JSON.stringify({model:GROQ_MODEL,temperature:0,response_format:{type:"json_object"},
-        messages:[{role:"system",content:sys},{role:"user",content:usr}]})});
-    if(!res.ok)throw new Error("HTTP "+res.status);
-    const data=await res.json();
-    let t=((data.choices&&data.choices[0]&&data.choices[0].message.content)||"").replace(/```json|```/g,"").trim();
+    let t=await groqJSON(sys,usr);
     (JSON.parse(t).r||[]).forEach(o=>{const c=withCrew[o.i];if(c){c.keep=!!o.keep;c.why=(o.why||"").slice(0,40);}});
-  }catch(e){const rx=/fret|transport|location/i;withCrew.forEach(c=>{c.keep=!rx.test(c.nom);c.why=c.keep?"chantier terrain":"fret / transport";});$("#err").style.display="block";$("#err").textContent=(e.message==="cle-absente"?"Clé Groq non renseignée":"IA indisponible")+" — règle simple appliquée (fret/transport exclus). Ajuste à la main si besoin.";}
+  }catch(e){const rx=/fret|transport|location/i;withCrew.forEach(c=>{c.keep=!rx.test(c.nom);c.why=c.keep?"chantier terrain":"fret / transport";});$("#err").style.display="block";$("#err").textContent="IA indisponible — règle simple appliquée (fret/transport exclus). Ajuste à la main si besoin.";}
   render(du,au); run.disabled=false; run.textContent="Relancer l'analyse";
 }
 run.addEventListener("click",analyse);
@@ -303,19 +294,45 @@ function payload(){
     chantiers:chantiers.map(c=>({nom:c.nom,compter:c.keep})),
     bateaux:bateaux.map(b=>({nom:b.nom,present:b.present,compter:b.keep}))};
 }
-// (bouton Envoyer retiré)
+// ---- Lecture des Vigiminutes reçues (JSONP depuis le webhook) ----
+const CHANTIER_SECTEURS=["exploitation","tereos","equipements portuaires","rehabilitation ecologique"];
+function jsonp(url){return new Promise((res,rej)=>{
+  const cb="__vg_"+Date.now(); const s=document.createElement("script");
+  window[cb]=d=>{res(d);try{delete window[cb]}catch(_){}s.remove();};
+  s.onerror=()=>{rej(new Error("lecture impossible"));s.remove();};
+  s.src=url+(url.indexOf("?")>=0?"&":"?")+"action=vigis&callback="+cb;
+  document.body.appendChild(s);
+});}
+$("#loadVigis").addEventListener("click",async()=>{
+  const url=$("#hook").value.trim(); if(!url){alert("Renseigne l'URL du webhook (const WEBHOOK_URL en haut du fichier).");return;}
+  const du=toDate($("#du").value), au=toDate($("#au").value);
+  $("#loadVigis").textContent="Chargement…"; $("#vgcount").textContent="";
+  try{
+    const all=await jsonp(url);
+    const vigis=all.filter(v=>{
+      const okSect=CHANTIER_SECTEURS.indexOf(norm(v.secteur))>=0;
+      const d=toDate(v.date); const inWk=(!du||!au||!d)?true:(d>=du&&d<=au);
+      return okSect&&inWk;
+    });
+    window.__vigis=vigis;
+    $("#vgcount").textContent=vigis.length+" Vigiminutes reçues (secteurs chantiers) sur la période";
+    $("#vglist").innerHTML="<table><thead><tr><th>Date</th><th>Secteur</th><th>Chantier (saisi par le collaborateur)</th></tr></thead><tbody>"+
+      vigis.map(v=>`<tr class="row"><td class="period">${v.date||""}</td><td>${v.secteur||""}</td><td class="cname">${v.chantier||""}</td></tr>`).join("")+"</tbody></table>";
+  }catch(e){$("#vgcount").textContent="Échec de lecture — vérifie l'URL et que le webhook a bien été redéployé.";}
+  $("#loadVigis").textContent="Charger les Vigiminutes reçues";
+});
+
 
 // ---- Rapprochement Exploitation (IA + corrections manuelles) ----
-async function groqJSON(sys,usr){
-  if(!GROQ_KEY||GROQ_KEY.indexOf("gsk_")!==0) throw new Error("cle-absente");
-  const res=await fetch("https://api.groq.com/openai/v1/chat/completions",{method:"POST",
-    headers:{"Content-Type":"application/json","Authorization":"Bearer "+GROQ_KEY},
-    body:JSON.stringify({model:GROQ_MODEL,temperature:0,response_format:{type:"json_object"},
-      messages:[{role:"system",content:sys},{role:"user",content:usr}]})});
-  if(!res.ok) throw new Error("HTTP "+res.status);
-  const data=await res.json();
-  return ((data.choices&&data.choices[0]&&data.choices[0].message.content)||"").replace(/```json|```/g,"").trim();
-}
+function groqJSON(sys,usr){return new Promise((resolve,reject)=>{
+  const url=$("#hook").value.trim(); if(!url){reject(new Error("URL webhook absente"));return;}
+  const cb="__ia_"+Date.now()+Math.floor(Math.random()*1000); const s=document.createElement("script");
+  const p=encodeURIComponent(JSON.stringify({system:sys,user:usr}));
+  window[cb]=d=>{try{delete window[cb]}catch(_){}s.remove(); if(d&&d.ok){resolve((d.content||"").replace(/```json|```/g,"").trim());}else{reject(new Error((d&&d.erreur)||"IA indisponible"));}};
+  s.onerror=()=>{reject(new Error("appel IA impossible"));s.remove();};
+  s.src=url+(url.indexOf("?")>=0?"&":"?")+"action=ia&callback="+cb+"&p="+p;
+  document.body.appendChild(s);
+});}
 let RAP_ACTIFS=[];
 $("#rapprocher").addEventListener("click",async()=>{
   const vigis=window.__vigis||[];
