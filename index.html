@@ -327,8 +327,9 @@ function groqJSON(sys,usr){return new Promise((resolve,reject)=>{
   document.body.appendChild(s);
 });}
 let RAP_ACTIFS=[];
-const STOP=new Set(["bief","biefs","pour","avec","dans","chantier","faucardage","dragage","curage","prestation","complementaire","campagne","zone","humide","bassin","marche","intervention","partie","canal","berges","sortie","terres","migennes","spot","2026","2025","2024","numero","des","les","une","sur","par","non","affecte","arrachage","plante","ramassage"]);
-function motsCles(s){return norm(s).replace(/[^a-z0-9 ]/g," ").split(/\s+/).filter(w=>w.length>=4 && !STOP.has(w));}
+const STOP=new Set(["bief","biefs","pour","avec","dans","chantier","faucardage","dragage","curage","prestation","complementaire","campagne","zone","humide","bassin","marche","intervention","partie","canal","berges","sortie","terres","migennes","spot","numero","des","les","une","sur","par","non","affecte","arrachage","plante","ramassage","cso","crd","rce","smbo","siah","2026","2025","2024","cd","bc","du","de","la","le","et","un","en"]);
+// Garde les mots >=3 lettres OU >=2 chiffres, hors mots vides -> attrape "kir", "spay", etc.
+function motsCles(s){return norm(s).replace(/[^a-z0-9 ]/g," ").split(/\s+/).filter(w=>!STOP.has(w) && (w.length>=3 || (w.length>=2 && /\d/.test(w))) );}
 function preMatch(nom){
   const mv=motsCles(nom); if(!mv.length) return -1;
   for(let ci=0;ci<RAP_ACTIFS.length;ci++){const mc=motsCles(RAP_ACTIFS[ci].nom); if(mv.some(w=>mc.indexOf(w)>=0)) return ci;}
