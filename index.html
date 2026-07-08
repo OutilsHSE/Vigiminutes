@@ -270,7 +270,7 @@ function analyse(){
   bateaux=BOATS.map(b=>{
     const keys=[norm(b.n)]; if(b.a) keys.push(norm(b.a));
     const hit=materiel.find(m=>{const nm=norm(m.nom);return keys.some(k=>nm.indexOf(k)>=0||k.indexOf(nm)>=0);});
-    return {nom:b.n,present:!!hit,d1:hit?hit.d1:null,d2:hit?hit.d2:null,keep:true};
+    return {nom:b.n,present:!!hit,d1:hit?hit.d1:null,d2:hit?hit.d2:null,keep:!!hit};   // inactif -> Non par défaut (modifiable)
   });
   render(du,au);
   run.textContent="Relancer l'analyse";
@@ -304,7 +304,7 @@ function render(du,au){
       <td><span class="seg"><button class="k ${b.keep?'on':''}" data-i="${i}" data-v="1">Oui</button><button class="e ${b.keep?'':'on'}" data-i="${i}" data-v="0">Non</button></span></td>`;
     tb.appendChild(tr);
   });
-  tb.querySelectorAll(".seg button").forEach(b=>b.addEventListener("click",()=>{bateaux[+b.dataset.i].keep=b.dataset.v==="1";render(du,au);}));
+  tb.querySelectorAll(".seg button").forEach(b=>b.addEventListener("click",()=>{bateaux[+b.dataset.i].keep=b.dataset.v==="1";render(du,au);if(($("#fretResult").innerHTML||"").trim()){renderFret();renderGlobal();}}));
   const pr=bateaux.filter(b=>b.present&&b.keep).length;
   $("#sumBt").innerHTML=`<span class="tag b">${pr} bateaux actifs</span><span class="tag n">${bateaux.length} suivis</span>`;
 }
