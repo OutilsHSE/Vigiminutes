@@ -84,6 +84,8 @@ select.pick{font-family:Inter;font-size:12.5px;padding:6px 8px;border:1px solid 
 .gbar.big{height:12px}
 .gbar>i{display:block;height:100%;background:var(--teal);border-radius:6px}
 .gpct{font-family:"JetBrains Mono";font-size:12px;color:var(--navy);min-width:38px;text-align:right}
+.trash{border:none;background:none;cursor:pointer;font-size:13px;opacity:.55;padding:0 2px}
+.trash:hover{opacity:1}
 .bilan-pct{font-family:"Space Grotesk";font-weight:700;font-size:46px;line-height:1}
 .bilan-lbl{font-family:"Space Grotesk";font-size:16px;font-weight:600;line-height:1.35}
 .bilan-lbl span{font-family:Inter;font-weight:400;font-size:13px;color:#C6D3DF}
@@ -173,6 +175,7 @@ select.pick{font-family:Inter;font-size:12.5px;padding:6px 8px;border:1px solid 
     <div class="panel-title" style="margin-top:28px"><span class="dot" style="background:var(--navy)"></span>Bilan global de la semaine</div>
     <p class="note" style="margin-top:2px">Les quatre familles assemblées selon leurs règles. Se met à jour quand tu corriges un rapprochement.</p>
     <div id="globalResult" style="margin-top:8px;overflow-x:auto"></div>
+    <div class="actions" style="margin-top:14px"><button class="btn primary" id="reporter">Reporter dans le classeur</button><span class="note" id="repinfo" style="margin:0"></span></div>
   </section>
 </div>
 
@@ -183,6 +186,7 @@ const WEBHOOK_URL = "https://script.google.com/macros/s/AKfycbzdDgaxaWnhCQZ_PptD
 /*  (Aucune clé IA ici : elle est cachée côté webhook.)          */
 /* ============================================================= */
 const PLANNING_DEMO = "Nom;D\u00e9but;Fin;Type\n1.2 BORDEAUX / CIVRAC;2024-01-01;2027-01-03;\n      Pelle 145-40;2026-04-22;2026-08-13;Mat\u00e9riel\n      Pelle 830-64;2026-04-22;2026-07-17;Mat\u00e9riel\n2024 06 09 RCE Moulins de Sault et Devrault;2024-07-26;2026-08-22;\n      KRINCKET Lucas heure;2026-06-25;2026-07-04;Main d'oeuvre\n      KRINCKET Ludovic;2026-06-15;2026-07-04;Main d'oeuvre\n      Morooka 7 (MST110CR);2026-06-15;2026-07-02;Mat\u00e9riel\n      Pelle 160-17;2026-06-22;2026-07-02;Mat\u00e9riel\nBC N\u00b0 01  Dragage des deux darses du Port de Nancy;2026-05-04;2026-07-06;\n      DOURLEN Maryline;2026-05-26;2026-07-11;Main d'oeuvre\n      DRECOURT Francis;2026-05-26;2026-07-11;Main d'oeuvre\n      DRECOURT Murielle;2026-05-27;2026-07-11;Main d'oeuvre\n      HOET Geoffrey;2026-06-16;2026-07-07;Main d'oeuvre\n      NOISIEZ David;2026-05-26;2026-07-11;Main d'oeuvre\n      PARANT Jim;2026-06-01;2026-07-11;Main d'oeuvre\n      PONTHIEU Magda;2026-05-26;2026-07-11;Main d'oeuvre\n      PONTHIEU Patrick;2026-05-26;2026-07-11;Main d'oeuvre\n      S\u00e9bastien Laffort;2026-06-22;2026-07-11;Main d'oeuvre\n      4cl01;2026-05-15;2026-07-11;Mat\u00e9riel\n      8cl13;2026-05-20;2026-07-11;Mat\u00e9riel\n      8cl45;2026-05-20;2026-07-11;Mat\u00e9riel\n      Andorra;2026-05-11;2026-07-11;Mat\u00e9riel\n      Bateau non affect\u00e9;2026-06-10;2026-07-11;Mat\u00e9riel\n      Comeback;2026-05-18;2026-07-11;Mat\u00e9riel\n      Conada;2026-05-18;2026-07-11;Mat\u00e9riel\n      Pelle 160-56;2026-05-20;2026-07-11;Mat\u00e9riel\n      Pelle 350-23;2026-05-21;2026-07-11;Mat\u00e9riel\n      Pirate;2026-05-18;2026-07-11;Mat\u00e9riel\n      Trucker;2026-05-19;2026-07-11;Mat\u00e9riel\nBC N\u00b0 12 Faucardage et ramassage sur le canal des Ardennes versant Meuse et Aisne;2026-06-19;2026-07-30;\n      LE SENECHAL Morgan;2026-06-30;2026-07-18;Main d'oeuvre\n      Faucardeur n\u00b028 Vicoin;2026-06-30;2026-07-24;Mat\u00e9riel\nBC N\u00b0 2025-02 Faucardage CRD Bief n\u00b02 de Cornillon et BIef n\u00b0 3 de Briennon;2026-03-02;2026-09-18;\n      DUBESSET Ludovic;2026-06-29;2026-07-30;Main d'oeuvre\n      MOULIER Thierry;2026-06-09;2026-07-30;Main d'oeuvre\n      YACEI Kamel;2026-06-09;2026-08-13;Main d'oeuvre\n      ZORZI R\u00e9gis;2026-06-29;2026-07-04;Main d'oeuvre\n      faucardeur n\u00b026 Le Var;2026-06-09;2026-08-14;Mat\u00e9riel\n      LE BOURGOGNE;2026-06-09;2026-08-14;Mat\u00e9riel\nBC N\u00b0 2026-00007093 Faucardage du Lac Kir avec faucardeuse moissonneuse et barge;2026-06-10;2026-09-18;\n      DICKO Mamadou;2026-06-16;2026-07-09;Main d'oeuvre\n      La Marne - Faucardeur ramasseur 4;2026-06-16;2026-07-09;Mat\u00e9riel\n      Pelle 160-21;2026-06-17;2026-07-09;Mat\u00e9riel\nBC N\u00b0 2026-01 CSO Bief de partage;2026-05-25;2026-08-22;\n      CROIZER Lo\u00efc;2026-06-30;2026-07-24;Main d'oeuvre\n      DRUAIS Ludovic;2026-06-18;2026-07-23;Main d'oeuvre\n      HUREL Lucas;2026-06-18;2026-07-21;Main d'oeuvre\n      4cl01;2026-06-22;2026-07-24;Mat\u00e9riel\n      8cl12;2026-06-22;2026-07-24;Mat\u00e9riel\n      8cl17;2026-06-22;2026-07-24;Mat\u00e9riel\n      Barge 11 - 30m3;2026-06-22;2026-07-24;Mat\u00e9riel\n      Barges non affect\u00e9;2026-06-22;2026-07-24;Mat\u00e9riel\n      Barges non affect\u00e9;2026-06-22;2026-07-24;Mat\u00e9riel\n      CDES 2;2026-06-22;2026-07-24;Mat\u00e9riel\n      Pelle 160-45;2026-06-22;2026-07-24;Mat\u00e9riel\n      Pelle 360-41;2026-06-22;2026-07-24;Mat\u00e9riel\nBC N\u00b0 2026-01 Prestation de ramassage du bief 114/115 y de migennes au bief 54y de v\u00e9narey les laume;2026-04-24;2026-07-15;\n      BOUCQ Thierry;2026-04-30;2026-08-04;Main d'oeuvre\n      Truxor T50-E;2026-04-28;2026-08-28;Mat\u00e9riel\nBC N\u00b0 2026-03 Faucardage CSO Bief 11,17 et une partie du 10,13,16 et 22;2026-06-15;2026-08-17;\n      GUERRERO Fr\u00e9d\u00e9ric;2026-06-30;2026-07-16;Main d'oeuvre\n      HURIAUX Fr\u00e9d\u00e9ric;2026-06-30;2026-07-30;Main d'oeuvre\n      La Vilaine;2026-06-30;2026-07-31;Mat\u00e9riel\nBC N\u00b0 4702734445 Campagne de sortie des terres du Bassin B8 TEREOS 2026;2025-12-23;2027-01-08;\n      CANU Florian;2026-06-16;2026-08-22;Main d'oeuvre\n      CHABERT Cyril;2026-04-23;2026-09-26;Main d'oeuvre\n      CHABERT Cyril;2026-05-28;2026-10-02;Main d'oeuvre\n      DUBLICQ Olivier;2026-04-27;2026-09-03;Main d'oeuvre\n      8cl15;2026-04-22;2026-09-26;Mat\u00e9riel\n      8cl25 ponton pieux;2026-04-22;2026-09-26;Mat\u00e9riel\n      8cl26;2026-04-22;2026-09-26;Mat\u00e9riel\n      8cl28;2026-04-22;2026-09-26;Mat\u00e9riel\n      8cl29;2026-04-22;2026-09-26;Mat\u00e9riel\n      8cl32;2026-04-22;2026-09-26;Mat\u00e9riel\n      Pelle 160-16;2026-05-05;2026-08-05;Mat\u00e9riel\n      Pelle 350-53 Tereos;2026-04-22;2026-09-26;Mat\u00e9riel\nBC N\u00b003202625025CS Prestation compl\u00e9mentaire pour arrachage de plante Myriophylle;2026-06-01;2026-08-15;\n      DEFACHELLES Julien;2026-07-01;2026-07-17;Main d'oeuvre\nBERGES JOUY LE MOUTIER - SMBO;2026-06-01;2026-09-20;\n      LAFFONT Franck;2026-06-29;2026-07-09;Main d'oeuvre\n      LAFROGNE Hugo;2026-06-22;2026-07-09;Main d'oeuvre\n      8cl19;2026-06-22;2026-07-09;Mat\u00e9riel\n      8cl22;2026-06-22;2026-07-09;Mat\u00e9riel\n      8cl33;2026-06-22;2026-07-09;Mat\u00e9riel\n      Pelle 210-55;2026-06-22;2026-07-09;Mat\u00e9riel\n      Pelle 329-25;2026-06-22;2026-07-09;Mat\u00e9riel\n      Pieu E (rivi\u00e8re);2026-06-22;2026-07-09;Mat\u00e9riel\n      Tonga;2026-06-22;2026-07-09;Mat\u00e9riel\nCOMPENSATION ZONE HUMIDE - BARRAGE DE BEAULIEU;2026-06-01;2027-02-28;\n      GUILLERMIC Mathis;2026-06-16;2026-07-11;Main d'oeuvre\n      MARCHOIS Brice;2026-06-29;2026-07-11;Main d'oeuvre\n      4 tracteurs ;2026-06-17;2026-07-08;Mat\u00e9riel\n      Pelle 160-66;2026-06-16;2026-07-11;Mat\u00e9riel\n      Pelle 350-68;2026-06-16;2026-07-11;Mat\u00e9riel\nDOMAINE DE SUSCINIO - Arrachage manuel;2026-06-15;2026-12-19;\n      Int\u00e9rimaire non affect\u00e9;2026-07-02;2026-07-10;Main d'oeuvre\n      Int\u00e9rimaire non affect\u00e9;2026-07-02;2026-07-10;Main d'oeuvre\n      Int\u00e9rimaire non affect\u00e9;2026-07-02;2026-07-10;Main d'oeuvre\n      LOPES Alex;2026-06-30;2026-07-07;Main d'oeuvre\nFAUCARDAGE CD 80 - Intervention 1;2026-04-08;2026-10-31;\n      GRANDVAL L\u00e9o;2026-04-27;2026-07-11;Main d'oeuvre\n      TRICOT Bertrand;2026-04-27;2026-07-11;Main d'oeuvre\n      Barge 14 - 30m3;2026-04-27;2026-07-11;Mat\u00e9riel\n      Barge 17 - 30m3;2026-05-05;2026-07-10;Mat\u00e9riel\n      Barge 7 - 30m3;2026-04-27;2026-07-11;Mat\u00e9riel\n      CDES 3;2026-04-27;2026-07-11;Mat\u00e9riel\n      Faucardeur n\u00b027 Le Verdon;2026-04-27;2026-07-10;Mat\u00e9riel\n      Le Blavet;2026-04-30;2026-07-11;Mat\u00e9riel\nFRET SPOT FD 2026;2025-12-23;2027-03-04;\n      AMAND Steffy;2026-04-22;2026-07-31;Main d'oeuvre\n      DOURLEN Jeremy;2026-04-22;2026-08-01;Main d'oeuvre\n      LEM;2026-04-22;2026-08-08;Mat\u00e9riel\nFRET SPOT PETERSON 2026;2026-04-06;2026-12-31;\n      DARTOIS Eric;2026-04-27;2026-07-30;Main d'oeuvre\n      Tchikiboum;2026-04-27;2026-08-08;Mat\u00e9riel\nLA ROCHELLE 2026 MARCHE 25MP127;2026-05-11;2026-08-08;\n      CHEVAL Nicolas;2026-05-27;2026-07-09;Main d'oeuvre\n      FRIGUEL Nicolas;2026-05-14;2026-07-09;Main d'oeuvre\n      HUGUEVILLE Maxence;2026-05-25;2026-07-08;Main d'oeuvre\n      8cl04 ponton pieux;2026-06-02;2026-07-11;Mat\u00e9riel\n      8cl13;2026-05-26;2026-07-11;Mat\u00e9riel\n      8cl16;2026-05-26;2026-07-11;Mat\u00e9riel\n      8cl21;2026-05-21;2026-07-11;Mat\u00e9riel\n      Barge 15 - 100m3;2026-05-26;2026-07-11;Mat\u00e9riel\n      Barge 16 -  100m3;2026-05-26;2026-07-11;Mat\u00e9riel\n      Barge 19 - Barge 100 m3;2026-05-26;2026-07-11;Mat\u00e9riel\n      CDES 5;2026-05-26;2026-07-11;Mat\u00e9riel\n      Pelle 360-34;2026-05-26;2026-07-11;Mat\u00e9riel\n      Pelle 830-49;2026-05-26;2026-07-11;Mat\u00e9riel\nRCE MOULIN DE LESSIER;2026-01-12;2026-10-10;\n      COMPAIN Camille;2026-05-21;2026-07-11;Main d'oeuvre\n      IDEZ Morgan;2026-06-15;2026-07-04;Main d'oeuvre\n      Hitachi EG70R;2026-05-13;2026-07-24;Mat\u00e9riel\n      Pelle 160-58;2026-05-13;2026-07-23;Mat\u00e9riel\n      Pelle 8t-65;2026-05-13;2026-07-24;Mat\u00e9riel\nRCE SIAH SARCELLES;2025-11-07;2026-12-19;\n      GOULETTE Bastien;2026-04-23;2026-08-11;Main d'oeuvre\n      M\u00c9AUDE Fr\u00e9d\u00e9ric;2026-06-29;2026-07-04;Main d'oeuvre\n      Morooka MST110CR;2026-04-22;2026-08-28;Mat\u00e9riel\n      Pelle 140-30;2026-04-23;2026-08-28;Mat\u00e9riel\n      Pelle 210-62;2026-05-29;2026-08-28;Mat\u00e9riel\nRestauration \u00e9cologique des berges du Bassin des Moulinets \u00e0 EAUBONNE;2026-01-26;2026-11-14;\n      CAILLIERET J\u00e9r\u00f4me;2026-04-22;2026-07-04;Main d'oeuvre\n      Int\u00e9rimaire x2;2026-06-23;2026-07-04;Main d'oeuvre";
+const MOIS_FR=["Janvier","Février","Mars","Avril","Mai","Juin","Juillet","Août","Septembre","Octobre","Novembre","Décembre"];
 const BOATS=[{n:"Trucker"},{n:"Le Lem",a:"LEM"},{n:"Comeback"},{n:"Conada"},{n:"Pirate"},{n:"Tchikiboum"},{n:"JPPH"},{n:"Caliméro"}];
 let rawCh=[], rawMat=[], chantiers=[], bateaux=[], materiel=[];
 const $=s=>document.querySelector(s);
@@ -280,12 +284,14 @@ function render(du,au){
   if(chantiers.length===0) tc.innerHTML='<tr><td colspan="4" class="why">Aucun chantier actif sur cette période.</td></tr>';
   chantiers.forEach((c,i)=>{
     const tr=document.createElement("tr"); tr.className="row"+(c.keep?"":" excluded"); tr.style.animationDelay=(i*16)+"ms";
-    tr.innerHTML=`<td class="cname">${c.nom}</td><td class="period">${fmt(c.d1)} → ${fmt(c.d2)}</td>
+    const corbeille=c.manuelAjout?`<button class="trash" data-del="${i}" title="Supprimer ce chantier ajouté">🗑</button>`:"";
+    tr.innerHTML=`<td class="cname">${c.nom} ${corbeille}</td><td class="period">${fmt(c.d1)} → ${fmt(c.d2)}</td>
       <td><span class="seg"><button class="k ${c.keep?'on':''}" data-i="${i}" data-v="1">Compter</button><button class="e ${c.keep?'':'on'}" data-i="${i}" data-v="0">Exclure</button></span></td>
       <td class="why">${c.why||""}</td>`;
     tc.appendChild(tr);
   });
   tc.querySelectorAll(".seg button").forEach(b=>b.addEventListener("click",()=>{chantiers[+b.dataset.i].keep=b.dataset.v==="1";render(du,au);}));
+  tc.querySelectorAll(".trash").forEach(b=>b.addEventListener("click",()=>{chantiers.splice(+b.dataset.del,1);render(du,au);if(($("#rapproResult").innerHTML||"").trim()){RAP_ACTIFS=chantiers.filter(c=>c.keep);renderRappro();}}));
   const k=chantiers.filter(c=>c.keep).length;
   $("#sumCh").innerHTML=`<span class="tag k">${k} à compter</span><span class="tag e">${chantiers.length-k} exclus</span><span class="tag n">${chantiers.length} actifs</span>`;
 
@@ -424,7 +430,7 @@ function autoMatchFret(){
 }
 function renderFret(){
   const fv=window.__fretVigis||[];
-  const actifs=(bateaux||[]).map((b,i)=>({b,i})).filter(o=>o.b.present);
+  const actifs=(bateaux||[]).map((b,i)=>({b,i})).filter(o=>o.b.present && o.b.keep);
   if(!actifs.length){$("#fretResult").innerHTML='<p class="note">Aucun bateau actif sur la période.</p>';return;}
   const opts=sel=>'<option value="-1"'+(sel<0?" selected":"")+'>— aucune —</option>'+fv.map((v,j)=>'<option value="'+j+'"'+(sel===j?" selected":"")+'>'+(((v.chantier||"?")+" ("+(v.date||"")+")").replace(/"/g,"&quot;"))+'</option>').join("");
   let html='<table><thead><tr><th>Bateau actif</th><th>Vigiminute Fret rapprochée</th><th>État</th></tr></thead><tbody>';
@@ -465,6 +471,27 @@ function renderGlobal(){
   window.__global={secteurs,totAtt,totRec,pct};
   $("#globalResult").innerHTML=html;
 }
+function moisRattachement(du,au){
+  const counts={}; const d=new Date(du);
+  while(d<=au){const k=d.getFullYear()+"|"+d.getMonth(); counts[k]=(counts[k]||0)+1; d.setDate(d.getDate()+1);}
+  const keys=Object.keys(counts).sort((a,b)=>{const A=a.split("|").map(Number),B=b.split("|").map(Number);return A[0]-B[0]||A[1]-B[1];});
+  let chosen=keys[0];
+  if(keys.length>1){const later=keys[keys.length-1]; chosen=counts[later]>=3?later:keys[0];}
+  const p=chosen.split("|").map(Number); return MOIS_FR[p[1]]+" "+p[0];
+}
+$("#reporter").addEventListener("click",()=>{
+  const g=window.__global; if(!g){alert("Fais d'abord le rapprochement (le bilan global doit être calculé).");return;}
+  const du=toDate($("#du").value), au=toDate($("#au").value); if(!du||!au){alert("Période invalide.");return;}
+  const cov=coverage();
+  const fretManq=(bateaux||[]).filter(b=>b.present&&b.keep&&!(b.fretMatch>=0)).map(b=>"Bateau "+b.nom);
+  const manquants=cov.manquants.concat(fretManq).join(" · ");
+  const p={type:"report",semaine:fmt(du)+" → "+fmt(au),du:$("#du").value,au:$("#au").value,
+    mois:moisRattachement(du,au),secteurs:g.secteurs,totAtt:g.totAtt,totRec:g.totRec,pct:g.pct,manquants};
+  $("#reporter").textContent="Report…"; $("#repinfo").textContent="";
+  fetch(WEBHOOK_URL,{method:"POST",mode:"no-cors",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify(p)})
+    .then(()=>{$("#reporter").textContent="Reporté ✓";$("#repinfo").textContent="Vérifie les onglets HISTORIQUE et BILAN HEBDO du classeur.";setTimeout(()=>$("#reporter").textContent="Reporter dans le classeur",2500);})
+    .catch(()=>{$("#reporter").textContent="Erreur";setTimeout(()=>$("#reporter").textContent="Reporter dans le classeur",2000);});
+});
 </script>
 </body>
 </html>
