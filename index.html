@@ -76,6 +76,7 @@ select.pick{font-family:Inter;font-size:12.5px;padding:6px 8px;border:1px solid 
 .addrow input{flex:1;border:1px solid var(--line);border-radius:9px;padding:9px 12px;font-family:Inter;font-size:13.5px;background:#FBFAF7}
 .addrow input:focus{outline:2px solid var(--teal-bright);outline-offset:1px;border-color:transparent}
 .bilan{display:flex;align-items:center;gap:18px;background:var(--navy);color:#fff;border-radius:14px;padding:18px 24px;margin:16px 0 4px}
+.bilan.total{background:var(--teal)}
 .bilan-pct{font-family:"Space Grotesk";font-weight:700;font-size:46px;line-height:1}
 .bilan-lbl{font-family:"Space Grotesk";font-size:16px;font-weight:600;line-height:1.35}
 .bilan-lbl span{font-family:Inter;font-weight:400;font-size:13px;color:#C6D3DF}
@@ -157,6 +158,10 @@ select.pick{font-family:Inter;font-size:12.5px;padding:6px 8px;border:1px solid 
     <div class="actions"><button class="btn primary" id="rapprocher">Rapprocher avec l'IA</button><span class="note" id="rpinfo" style="margin:0"></span></div>
     <div class="addrow"><input type="text" id="newChantier" placeholder="Ajouter un chantier absent du planning…"><button class="btn ghost" id="addChantier">Ajouter</button></div>
     <div id="rapproResult" style="margin-top:12px;overflow-x:auto"></div>
+
+    <div class="panel-title" style="margin-top:28px"><span class="dot" style="background:var(--navy)"></span>Bilan global de la semaine</div>
+    <p class="note" style="margin-top:2px">Les quatre familles assemblées selon leurs règles. Se met à jour quand tu corriges un rapprochement.</p>
+    <div id="globalResult" style="margin-top:8px;overflow-x:auto"></div>
   </section>
 </div>
 
@@ -391,6 +396,41 @@ function renderRappro(){
   $("#rapproResult").innerHTML=html;
   $("#rapproResult").querySelectorAll("select.pick").forEach(s=>s.addEventListener("change",()=>{const v=vigis[+s.dataset.i];v.match=parseInt(s.value);v.manuel=true;v.auto=false;renderRappro();}));
   window.__exploitation={recues:cov.recues,attendues:cov.attendues};
+  renderGlobal();
+}
+function fretCoverage(){
+  const all=window.__vigisAll||[];
+  const fretVigis=all.filter(v=>norm(v.secteur)==="fret fluvial");
+  const actifs=(bateaux||[]).filter(b=>b.present && b.keep);
+  let couverts=0;
+  actifs.forEach(b=>{
+    const alias=BOATS.find(x=>x.n===b.nom); const keys=[norm(b.nom)]; if(alias&&alias.a) keys.push(norm(alias.a));
+    if(fretVigis.some(v=>{const vn=norm(v.chantier); return keys.some(k=>vn.indexOf(k)>=0||k.indexOf(vn)>=0);})) couverts++;
+  });
+  return {attendues:actifs.length, recues:couverts};
+}
+function renderGlobal(){
+  const all=window.__vigisAll||[];
+  const nb=sect=>all.filter(v=>norm(v.secteur)===sect).length;
+  const exp=window.__exploitation||{recues:0,attendues:0};
+  const fret=fretCoverage();
+  const bathy=nb("bathymetrie"), atelier=nb("atelier");
+  const secteurs=[
+    {nom:"Exploitation (chantiers)", att:exp.attendues, rec:exp.recues},
+    {nom:"Fret Fluvial", att:fret.attendues, rec:fret.recues},
+    {nom:"Bathymétrie", att:bathy, rec:bathy},
+    {nom:"Atelier", att:atelier, rec:atelier}
+  ];
+  const totAtt=secteurs.reduce((s,x)=>s+x.att,0), totRec=secteurs.reduce((s,x)=>s+x.rec,0);
+  const pct=totAtt?Math.round(totRec/totAtt*100):0;
+  let html='<div class="bilan total"><div class="bilan-pct">'+pct+'%</div><div class="bilan-lbl">Réalisation globale de la semaine<br><span>'+totRec+' / '+totAtt+' Vigiminutes</span></div></div>';
+  html+='<table><thead><tr><th>Secteur</th><th>Attendues</th><th>Reçues</th><th>%</th></tr></thead><tbody>';
+  secteurs.forEach(x=>{const p=x.att?Math.round(x.rec/x.att*100):null;
+    html+='<tr class="row"><td class="cname">'+x.nom+'</td><td>'+x.att+'</td><td>'+x.rec+'</td><td>'+(p===null?"—":p+"%")+'</td></tr>';});
+  html+='<tr class="row" style="background:#F3F1EC"><td class="cname"><strong>TOTAL</strong></td><td><strong>'+totAtt+'</strong></td><td><strong>'+totRec+'</strong></td><td><strong>'+pct+'%</strong></td></tr>';
+  html+='</tbody></table>';
+  window.__global={secteurs,totAtt,totRec,pct};
+  $("#globalResult").innerHTML=html;
 }
 </script>
 </body>
