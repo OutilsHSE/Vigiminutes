@@ -491,11 +491,11 @@ $("#reporter").addEventListener("click",()=>{
   const du=toDate($("#du").value), au=toDate($("#au").value); if(!du||!au){alert("Période invalide.");return;}
   const cov=coverage();
   const fretManq=(bateaux||[]).filter(b=>b.present&&b.keep&&!(b.fretMatch>=0)).map(b=>"Bateau "+b.nom);
-  const manquants=cov.manquants.concat(fretManq).join(" · ");
-  // justifications des éléments NON comptés (chantiers exclus + bateaux actifs mis sur Non)
-  const comCh=(chantiers||[]).filter(c=>!c.keep && (c.why||"").trim()).map(c=>c.nom+" : "+c.why.trim());
+  const manquants=cov.manquants.concat(fretManq).join("\n");                       // un élément par ligne
+  // justifications des éléments NON comptés — chantiers exclus (hors fret) + bateaux actifs mis sur Non
+  const comCh=(chantiers||[]).filter(c=>!c.keep && !/fret/i.test(c.nom) && (c.why||"").trim()).map(c=>c.nom+" : "+c.why.trim());
   const comBt=(bateaux||[]).filter(b=>b.present && !b.keep && (b.cmt||"").trim()).map(b=>b.nom+" : "+b.cmt.trim());
-  const commentaires=comCh.concat(comBt).join(" · ");
+  const commentaires=comCh.concat(comBt).join("\n");                                // un élément par ligne
   const p={type:"report",semaine:fmt(du)+" → "+fmt(au),du:$("#du").value,au:$("#au").value,
     mois:moisRattachement(du,au),secteurs:g.secteurs,totAtt:g.totAtt,totRec:g.totRec,pct:g.pct,manquants,commentaires};
   $("#reporter").textContent="Report…"; $("#repinfo").textContent="";
