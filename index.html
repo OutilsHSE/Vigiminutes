@@ -85,6 +85,7 @@ select.pick{font-family:Inter;font-size:12.5px;padding:6px 8px;border:1px solid 
 .gbar>i{display:block;height:100%;background:var(--teal);border-radius:6px}
 .gpct{font-family:"JetBrains Mono";font-size:12px;color:var(--navy);min-width:38px;text-align:right}
 .trash{border:none;background:none;cursor:pointer;font-size:13px;opacity:.55;padding:0 2px}
+.warn{color:#C0392B;font-size:14px;cursor:help}
 select.agc{font-family:Inter;font-size:12.5px;padding:5px 7px;border:1px solid var(--line);border-radius:7px;background:#fff;color:var(--ink)}
 input.cmt{width:100%;min-width:150px;border:1px solid transparent;border-radius:7px;padding:6px 8px;font-family:Inter;font-size:12.5px;font-style:italic;color:var(--muted);background:transparent}
 input.cmt:hover{border-color:var(--line);background:#FBFAF7}
@@ -300,7 +301,7 @@ function render(du,au){
   tc.querySelectorAll(".seg button").forEach(b=>b.addEventListener("click",()=>{chantiers[+b.dataset.i].keep=b.dataset.v==="1";render(du,au);}));
   tc.querySelectorAll(".trash").forEach(b=>b.addEventListener("click",()=>{chantiers.splice(+b.dataset.del,1);render(du,au);if(($("#rapproResult").innerHTML||"").trim()){RAP_ACTIFS=chantiers.filter(c=>c.keep);renderRappro();}}));
   tc.querySelectorAll("input.cmt").forEach(inp=>inp.addEventListener("input",()=>{chantiers[+inp.dataset.ci].why=inp.value;}));
-  tc.querySelectorAll("select.agc").forEach(sel=>sel.addEventListener("change",()=>{chantiers[+sel.dataset.ai].agence=sel.value;if(($("#rapproResult").innerHTML||"").trim()){RAP_ACTIFS=chantiers.filter(c=>c.keep);renderRappro();}}));
+  tc.querySelectorAll("select.agc").forEach(sel=>sel.addEventListener("change",()=>{const c=chantiers[+sel.dataset.ai];c.agence=sel.value;c.agenceManuel=true;if(($("#rapproResult").innerHTML||"").trim()){RAP_ACTIFS=chantiers.filter(c=>c.keep);renderRappro();}}));
   const k=chantiers.filter(c=>c.keep).length;
   $("#sumCh").innerHTML=`<span class="tag k">${k} à compter</span><span class="tag e">${chantiers.length-k} exclus</span><span class="tag n">${chantiers.length} actifs</span>`;
 
@@ -398,6 +399,9 @@ $("#rapprocher").addEventListener("click",async()=>{
       $("#rpinfo").textContent="IA indisponible — rapprochement approximatif, à vérifier.";
     }
   }
+  // pré-remplissage de l'agence des chantiers depuis les Vigiminutes (si non modifié à la main)
+  (window.__vigis||[]).forEach(v=>{ if(v.match>=0 && v.agence){ const c=RAP_ACTIFS[v.match]; if(c && !c.agenceManuel && c.agence!==v.agence){ c.agence=v.agence; } } });
+  render(CUR_DU,CUR_AU);
   autoMatchFret(); renderFret();
   renderRappro(); $("#rapprocher").textContent="Relancer le rapprochement";
 });
@@ -421,7 +425,7 @@ function renderRappro(){
   vigis.forEach((v,i)=>{const cc=confClass(v);
     html+='<tr class="row"><td><span class="cname">'+(v.chantier||"")+'</span><br><span class="period">'+(v.date||"")+" · "+(v.secteur||"")+'</span></td>'+
       '<td><select class="pick" data-i="'+i+'">'+opts(v.match)+'</select></td>'+
-      '<td>'+(v.match>=0?'<span class="conf man">'+((RAP_ACTIFS[v.match]&&RAP_ACTIFS[v.match].agence)||"IDF")+'</span>':'<span class="period">—</span>')+'</td>'+
+      '<td>'+(v.match<0?'<span class="period">—</span>':((function(){const chAg=(RAP_ACTIFS[v.match]&&RAP_ACTIFS[v.match].agence)||"IDF";const div=v.agence&&v.agence!==chAg;return '<span class="conf man">'+chAg+'</span>'+(div?' <span class="warn" title="La Vigiminute indique '+v.agence+'">\u26a0</span>':'');})()))+'</td>'+
       '<td><span class="conf '+cc[0]+'">'+cc[1]+'</span></td></tr>';});
   html+='</tbody></table>';
   const cov=coverage(); const pct=cov.attendues?Math.round(cov.recues/cov.attendues*100):0;
