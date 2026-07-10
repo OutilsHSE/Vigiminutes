@@ -85,6 +85,7 @@ select.pick{font-family:Inter;font-size:12.5px;padding:6px 8px;border:1px solid 
 .gbar>i{display:block;height:100%;background:var(--teal);border-radius:6px}
 .gpct{font-family:"JetBrains Mono";font-size:12px;color:var(--navy);min-width:38px;text-align:right}
 .trash{border:none;background:none;cursor:pointer;font-size:13px;opacity:.55;padding:0 2px}
+select.agc{font-family:Inter;font-size:12.5px;padding:5px 7px;border:1px solid var(--line);border-radius:7px;background:#fff;color:var(--ink)}
 input.cmt{width:100%;min-width:150px;border:1px solid transparent;border-radius:7px;padding:6px 8px;font-family:Inter;font-size:12.5px;font-style:italic;color:var(--muted);background:transparent}
 input.cmt:hover{border-color:var(--line);background:#FBFAF7}
 input.cmt:focus{outline:2px solid var(--teal-bright);outline-offset:0;border-color:transparent;background:#fff;font-style:normal;color:var(--ink)}
@@ -152,7 +153,7 @@ input.cmt:focus{outline:2px solid var(--teal-bright);outline-offset:0;border-col
     <div class="panel-title"><span class="dot" style="background:var(--teal)"></span>Chantiers à compter</div>
     <div class="rangecap" id="capCh"></div>
     <div class="summary" id="sumCh"></div>
-    <div style="overflow-x:auto"><table><thead><tr><th>Chantier</th><th>Période</th><th>Décision</th><th>Pourquoi</th></tr></thead><tbody id="tbCh"></tbody></table></div>
+    <div style="overflow-x:auto"><table><thead><tr><th>Chantier</th><th>Période</th><th>Décision</th><th>Agence</th><th>Pourquoi</th></tr></thead><tbody id="tbCh"></tbody></table></div>
     <div class="addrow"><input type="text" id="newChantier" placeholder="Ajouter un chantier de dernière minute absent du planning…"><button class="btn ghost" id="addChantier">Ajouter à la liste</button></div>
 
     <div class="panel-title" style="margin-top:28px"><span class="dot" style="background:var(--boat)"></span>Bateaux Fret Fluvial</div>
@@ -189,6 +190,8 @@ const WEBHOOK_URL = "https://script.google.com/macros/s/AKfycbzdDgaxaWnhCQZ_PptD
 /*  (Aucune clé IA ici : elle est cachée côté webhook.)          */
 /* ============================================================= */
 const PLANNING_DEMO = "Nom;D\u00e9but;Fin;Type\n1.2 BORDEAUX / CIVRAC;2024-01-01;2027-01-03;\n      Pelle 145-40;2026-04-22;2026-08-13;Mat\u00e9riel\n      Pelle 830-64;2026-04-22;2026-07-17;Mat\u00e9riel\n2024 06 09 RCE Moulins de Sault et Devrault;2024-07-26;2026-08-22;\n      KRINCKET Lucas heure;2026-06-25;2026-07-04;Main d'oeuvre\n      KRINCKET Ludovic;2026-06-15;2026-07-04;Main d'oeuvre\n      Morooka 7 (MST110CR);2026-06-15;2026-07-02;Mat\u00e9riel\n      Pelle 160-17;2026-06-22;2026-07-02;Mat\u00e9riel\nBC N\u00b0 01  Dragage des deux darses du Port de Nancy;2026-05-04;2026-07-06;\n      DOURLEN Maryline;2026-05-26;2026-07-11;Main d'oeuvre\n      DRECOURT Francis;2026-05-26;2026-07-11;Main d'oeuvre\n      DRECOURT Murielle;2026-05-27;2026-07-11;Main d'oeuvre\n      HOET Geoffrey;2026-06-16;2026-07-07;Main d'oeuvre\n      NOISIEZ David;2026-05-26;2026-07-11;Main d'oeuvre\n      PARANT Jim;2026-06-01;2026-07-11;Main d'oeuvre\n      PONTHIEU Magda;2026-05-26;2026-07-11;Main d'oeuvre\n      PONTHIEU Patrick;2026-05-26;2026-07-11;Main d'oeuvre\n      S\u00e9bastien Laffort;2026-06-22;2026-07-11;Main d'oeuvre\n      4cl01;2026-05-15;2026-07-11;Mat\u00e9riel\n      8cl13;2026-05-20;2026-07-11;Mat\u00e9riel\n      8cl45;2026-05-20;2026-07-11;Mat\u00e9riel\n      Andorra;2026-05-11;2026-07-11;Mat\u00e9riel\n      Bateau non affect\u00e9;2026-06-10;2026-07-11;Mat\u00e9riel\n      Comeback;2026-05-18;2026-07-11;Mat\u00e9riel\n      Conada;2026-05-18;2026-07-11;Mat\u00e9riel\n      Pelle 160-56;2026-05-20;2026-07-11;Mat\u00e9riel\n      Pelle 350-23;2026-05-21;2026-07-11;Mat\u00e9riel\n      Pirate;2026-05-18;2026-07-11;Mat\u00e9riel\n      Trucker;2026-05-19;2026-07-11;Mat\u00e9riel\nBC N\u00b0 12 Faucardage et ramassage sur le canal des Ardennes versant Meuse et Aisne;2026-06-19;2026-07-30;\n      LE SENECHAL Morgan;2026-06-30;2026-07-18;Main d'oeuvre\n      Faucardeur n\u00b028 Vicoin;2026-06-30;2026-07-24;Mat\u00e9riel\nBC N\u00b0 2025-02 Faucardage CRD Bief n\u00b02 de Cornillon et BIef n\u00b0 3 de Briennon;2026-03-02;2026-09-18;\n      DUBESSET Ludovic;2026-06-29;2026-07-30;Main d'oeuvre\n      MOULIER Thierry;2026-06-09;2026-07-30;Main d'oeuvre\n      YACEI Kamel;2026-06-09;2026-08-13;Main d'oeuvre\n      ZORZI R\u00e9gis;2026-06-29;2026-07-04;Main d'oeuvre\n      faucardeur n\u00b026 Le Var;2026-06-09;2026-08-14;Mat\u00e9riel\n      LE BOURGOGNE;2026-06-09;2026-08-14;Mat\u00e9riel\nBC N\u00b0 2026-00007093 Faucardage du Lac Kir avec faucardeuse moissonneuse et barge;2026-06-10;2026-09-18;\n      DICKO Mamadou;2026-06-16;2026-07-09;Main d'oeuvre\n      La Marne - Faucardeur ramasseur 4;2026-06-16;2026-07-09;Mat\u00e9riel\n      Pelle 160-21;2026-06-17;2026-07-09;Mat\u00e9riel\nBC N\u00b0 2026-01 CSO Bief de partage;2026-05-25;2026-08-22;\n      CROIZER Lo\u00efc;2026-06-30;2026-07-24;Main d'oeuvre\n      DRUAIS Ludovic;2026-06-18;2026-07-23;Main d'oeuvre\n      HUREL Lucas;2026-06-18;2026-07-21;Main d'oeuvre\n      4cl01;2026-06-22;2026-07-24;Mat\u00e9riel\n      8cl12;2026-06-22;2026-07-24;Mat\u00e9riel\n      8cl17;2026-06-22;2026-07-24;Mat\u00e9riel\n      Barge 11 - 30m3;2026-06-22;2026-07-24;Mat\u00e9riel\n      Barges non affect\u00e9;2026-06-22;2026-07-24;Mat\u00e9riel\n      Barges non affect\u00e9;2026-06-22;2026-07-24;Mat\u00e9riel\n      CDES 2;2026-06-22;2026-07-24;Mat\u00e9riel\n      Pelle 160-45;2026-06-22;2026-07-24;Mat\u00e9riel\n      Pelle 360-41;2026-06-22;2026-07-24;Mat\u00e9riel\nBC N\u00b0 2026-01 Prestation de ramassage du bief 114/115 y de migennes au bief 54y de v\u00e9narey les laume;2026-04-24;2026-07-15;\n      BOUCQ Thierry;2026-04-30;2026-08-04;Main d'oeuvre\n      Truxor T50-E;2026-04-28;2026-08-28;Mat\u00e9riel\nBC N\u00b0 2026-03 Faucardage CSO Bief 11,17 et une partie du 10,13,16 et 22;2026-06-15;2026-08-17;\n      GUERRERO Fr\u00e9d\u00e9ric;2026-06-30;2026-07-16;Main d'oeuvre\n      HURIAUX Fr\u00e9d\u00e9ric;2026-06-30;2026-07-30;Main d'oeuvre\n      La Vilaine;2026-06-30;2026-07-31;Mat\u00e9riel\nBC N\u00b0 4702734445 Campagne de sortie des terres du Bassin B8 TEREOS 2026;2025-12-23;2027-01-08;\n      CANU Florian;2026-06-16;2026-08-22;Main d'oeuvre\n      CHABERT Cyril;2026-04-23;2026-09-26;Main d'oeuvre\n      CHABERT Cyril;2026-05-28;2026-10-02;Main d'oeuvre\n      DUBLICQ Olivier;2026-04-27;2026-09-03;Main d'oeuvre\n      8cl15;2026-04-22;2026-09-26;Mat\u00e9riel\n      8cl25 ponton pieux;2026-04-22;2026-09-26;Mat\u00e9riel\n      8cl26;2026-04-22;2026-09-26;Mat\u00e9riel\n      8cl28;2026-04-22;2026-09-26;Mat\u00e9riel\n      8cl29;2026-04-22;2026-09-26;Mat\u00e9riel\n      8cl32;2026-04-22;2026-09-26;Mat\u00e9riel\n      Pelle 160-16;2026-05-05;2026-08-05;Mat\u00e9riel\n      Pelle 350-53 Tereos;2026-04-22;2026-09-26;Mat\u00e9riel\nBC N\u00b003202625025CS Prestation compl\u00e9mentaire pour arrachage de plante Myriophylle;2026-06-01;2026-08-15;\n      DEFACHELLES Julien;2026-07-01;2026-07-17;Main d'oeuvre\nBERGES JOUY LE MOUTIER - SMBO;2026-06-01;2026-09-20;\n      LAFFONT Franck;2026-06-29;2026-07-09;Main d'oeuvre\n      LAFROGNE Hugo;2026-06-22;2026-07-09;Main d'oeuvre\n      8cl19;2026-06-22;2026-07-09;Mat\u00e9riel\n      8cl22;2026-06-22;2026-07-09;Mat\u00e9riel\n      8cl33;2026-06-22;2026-07-09;Mat\u00e9riel\n      Pelle 210-55;2026-06-22;2026-07-09;Mat\u00e9riel\n      Pelle 329-25;2026-06-22;2026-07-09;Mat\u00e9riel\n      Pieu E (rivi\u00e8re);2026-06-22;2026-07-09;Mat\u00e9riel\n      Tonga;2026-06-22;2026-07-09;Mat\u00e9riel\nCOMPENSATION ZONE HUMIDE - BARRAGE DE BEAULIEU;2026-06-01;2027-02-28;\n      GUILLERMIC Mathis;2026-06-16;2026-07-11;Main d'oeuvre\n      MARCHOIS Brice;2026-06-29;2026-07-11;Main d'oeuvre\n      4 tracteurs ;2026-06-17;2026-07-08;Mat\u00e9riel\n      Pelle 160-66;2026-06-16;2026-07-11;Mat\u00e9riel\n      Pelle 350-68;2026-06-16;2026-07-11;Mat\u00e9riel\nDOMAINE DE SUSCINIO - Arrachage manuel;2026-06-15;2026-12-19;\n      Int\u00e9rimaire non affect\u00e9;2026-07-02;2026-07-10;Main d'oeuvre\n      Int\u00e9rimaire non affect\u00e9;2026-07-02;2026-07-10;Main d'oeuvre\n      Int\u00e9rimaire non affect\u00e9;2026-07-02;2026-07-10;Main d'oeuvre\n      LOPES Alex;2026-06-30;2026-07-07;Main d'oeuvre\nFAUCARDAGE CD 80 - Intervention 1;2026-04-08;2026-10-31;\n      GRANDVAL L\u00e9o;2026-04-27;2026-07-11;Main d'oeuvre\n      TRICOT Bertrand;2026-04-27;2026-07-11;Main d'oeuvre\n      Barge 14 - 30m3;2026-04-27;2026-07-11;Mat\u00e9riel\n      Barge 17 - 30m3;2026-05-05;2026-07-10;Mat\u00e9riel\n      Barge 7 - 30m3;2026-04-27;2026-07-11;Mat\u00e9riel\n      CDES 3;2026-04-27;2026-07-11;Mat\u00e9riel\n      Faucardeur n\u00b027 Le Verdon;2026-04-27;2026-07-10;Mat\u00e9riel\n      Le Blavet;2026-04-30;2026-07-11;Mat\u00e9riel\nFRET SPOT FD 2026;2025-12-23;2027-03-04;\n      AMAND Steffy;2026-04-22;2026-07-31;Main d'oeuvre\n      DOURLEN Jeremy;2026-04-22;2026-08-01;Main d'oeuvre\n      LEM;2026-04-22;2026-08-08;Mat\u00e9riel\nFRET SPOT PETERSON 2026;2026-04-06;2026-12-31;\n      DARTOIS Eric;2026-04-27;2026-07-30;Main d'oeuvre\n      Tchikiboum;2026-04-27;2026-08-08;Mat\u00e9riel\nLA ROCHELLE 2026 MARCHE 25MP127;2026-05-11;2026-08-08;\n      CHEVAL Nicolas;2026-05-27;2026-07-09;Main d'oeuvre\n      FRIGUEL Nicolas;2026-05-14;2026-07-09;Main d'oeuvre\n      HUGUEVILLE Maxence;2026-05-25;2026-07-08;Main d'oeuvre\n      8cl04 ponton pieux;2026-06-02;2026-07-11;Mat\u00e9riel\n      8cl13;2026-05-26;2026-07-11;Mat\u00e9riel\n      8cl16;2026-05-26;2026-07-11;Mat\u00e9riel\n      8cl21;2026-05-21;2026-07-11;Mat\u00e9riel\n      Barge 15 - 100m3;2026-05-26;2026-07-11;Mat\u00e9riel\n      Barge 16 -  100m3;2026-05-26;2026-07-11;Mat\u00e9riel\n      Barge 19 - Barge 100 m3;2026-05-26;2026-07-11;Mat\u00e9riel\n      CDES 5;2026-05-26;2026-07-11;Mat\u00e9riel\n      Pelle 360-34;2026-05-26;2026-07-11;Mat\u00e9riel\n      Pelle 830-49;2026-05-26;2026-07-11;Mat\u00e9riel\nRCE MOULIN DE LESSIER;2026-01-12;2026-10-10;\n      COMPAIN Camille;2026-05-21;2026-07-11;Main d'oeuvre\n      IDEZ Morgan;2026-06-15;2026-07-04;Main d'oeuvre\n      Hitachi EG70R;2026-05-13;2026-07-24;Mat\u00e9riel\n      Pelle 160-58;2026-05-13;2026-07-23;Mat\u00e9riel\n      Pelle 8t-65;2026-05-13;2026-07-24;Mat\u00e9riel\nRCE SIAH SARCELLES;2025-11-07;2026-12-19;\n      GOULETTE Bastien;2026-04-23;2026-08-11;Main d'oeuvre\n      M\u00c9AUDE Fr\u00e9d\u00e9ric;2026-06-29;2026-07-04;Main d'oeuvre\n      Morooka MST110CR;2026-04-22;2026-08-28;Mat\u00e9riel\n      Pelle 140-30;2026-04-23;2026-08-28;Mat\u00e9riel\n      Pelle 210-62;2026-05-29;2026-08-28;Mat\u00e9riel\nRestauration \u00e9cologique des berges du Bassin des Moulinets \u00e0 EAUBONNE;2026-01-26;2026-11-14;\n      CAILLIERET J\u00e9r\u00f4me;2026-04-22;2026-07-04;Main d'oeuvre\n      Int\u00e9rimaire x2;2026-06-23;2026-07-04;Main d'oeuvre";
+const AGENCES=["IDF","NA","BPL"];
+function agcOpts(sel){return AGENCES.map(a=>"<option"+(a===sel?" selected":"")+">"+a+"</option>").join("");}
 const MOIS_FR=["Janvier","Février","Mars","Avril","Mai","Juin","Juillet","Août","Septembre","Octobre","Novembre","Décembre"];
 const BOATS=[{n:"Trucker"},{n:"Le Lem",a:"LEM"},{n:"Comeback"},{n:"Conada"},{n:"Pirate"},{n:"Tchikiboum"},{n:"JPPH"},{n:"Caliméro"}];
 let rawCh=[], rawMat=[], chantiers=[], bateaux=[], materiel=[];
@@ -267,7 +270,7 @@ function analyse(){
     const fret=/fret/i.test(c.nom);
     const keep=crew && !fret;
     const why = !crew ? "chantier à l'arrêt" : (fret ? "fret pris en compte séparément" : "chantier en cours de réalisation");
-    return {nom:c.nom,d1:c.d1,d2:c.d2,crew,keep,why};
+    return {nom:c.nom,d1:c.d1,d2:c.d2,crew,keep,why,agence:"IDF"};
   });
   materiel=rawMat.filter(m=>overlap(m,du,au));
   bateaux=BOATS.map(b=>{
@@ -284,18 +287,20 @@ function render(du,au){
   $("#results").style.display="block";
   $("#capCh").textContent="Période analysée : "+fmt(du)+" → "+fmt(au)+" — les chantiers sans nom/prénom affecté sont exclus automatiquement.";
   const tc=$("#tbCh"); tc.innerHTML="";
-  if(chantiers.length===0) tc.innerHTML='<tr><td colspan="4" class="why">Aucun chantier actif sur cette période.</td></tr>';
+  if(chantiers.length===0) tc.innerHTML='<tr><td colspan="5" class="why">Aucun chantier actif sur cette période.</td></tr>';
   chantiers.forEach((c,i)=>{
     const tr=document.createElement("tr"); tr.className="row"+(c.keep?"":" excluded"); tr.style.animationDelay=(i*16)+"ms";
     const corbeille=c.manuelAjout?`<button class="trash" data-del="${i}" title="Supprimer ce chantier ajouté">🗑</button>`:"";
     tr.innerHTML=`<td class="cname">${c.nom} ${corbeille}</td><td class="period">${fmt(c.d1)} → ${fmt(c.d2)}</td>
       <td><span class="seg"><button class="k ${c.keep?'on':''}" data-i="${i}" data-v="1">Compter</button><button class="e ${c.keep?'':'on'}" data-i="${i}" data-v="0">Exclure</button></span></td>
+      <td><select class="agc" data-ai="${i}">${agcOpts(c.agence||"IDF")}</select></td>
       <td><input class="cmt" data-ci="${i}" value="${(c.why||"").replace(/"/g,"&quot;")}"></td>`;
     tc.appendChild(tr);
   });
   tc.querySelectorAll(".seg button").forEach(b=>b.addEventListener("click",()=>{chantiers[+b.dataset.i].keep=b.dataset.v==="1";render(du,au);}));
   tc.querySelectorAll(".trash").forEach(b=>b.addEventListener("click",()=>{chantiers.splice(+b.dataset.del,1);render(du,au);if(($("#rapproResult").innerHTML||"").trim()){RAP_ACTIFS=chantiers.filter(c=>c.keep);renderRappro();}}));
   tc.querySelectorAll("input.cmt").forEach(inp=>inp.addEventListener("input",()=>{chantiers[+inp.dataset.ci].why=inp.value;}));
+  tc.querySelectorAll("select.agc").forEach(sel=>sel.addEventListener("change",()=>{chantiers[+sel.dataset.ai].agence=sel.value;if(($("#rapproResult").innerHTML||"").trim()){RAP_ACTIFS=chantiers.filter(c=>c.keep);renderRappro();}}));
   const k=chantiers.filter(c=>c.keep).length;
   $("#sumCh").innerHTML=`<span class="tag k">${k} à compter</span><span class="tag e">${chantiers.length-k} exclus</span><span class="tag n">${chantiers.length} actifs</span>`;
 
@@ -398,7 +403,7 @@ $("#rapprocher").addEventListener("click",async()=>{
 });
 $("#addChantier").addEventListener("click",()=>{
   const nom=$("#newChantier").value.trim(); if(!nom) return;
-  const c={nom,keep:true,crew:true,why:"ajouté manuellement",d1:null,d2:null,manuelAjout:true};
+  const c={nom,keep:true,crew:true,why:"ajouté manuellement",d1:null,d2:null,manuelAjout:true,agence:"IDF"};
   chantiers.push(c); $("#newChantier").value="";
   render(CUR_DU,CUR_AU);                                   // rafraîchit la liste des chantiers en haut
   if(($("#rapproResult").innerHTML||"").trim()){ RAP_ACTIFS.push(c); renderRappro(); }   // si déjà rapproché
@@ -412,10 +417,11 @@ function confClass(v){ if(v.manuel) return["man","manuel"]; if(v.auto) return["h
 function renderRappro(){
   const vigis=window.__vigis||[];
   const opts=sel=>'<option value="-1"'+(sel<0?" selected":"")+'>— aucun —</option>'+RAP_ACTIFS.map((c,i)=>'<option value="'+i+'"'+(sel===i?" selected":"")+'>'+(c.nom||"").replace(/"/g,"&quot;")+'</option>').join("");
-  let html='<table><thead><tr><th>Vigiminute reçue</th><th>Chantier rapproché</th><th>Confiance</th></tr></thead><tbody>';
+  let html='<table><thead><tr><th>Vigiminute reçue</th><th>Chantier rapproché</th><th>Agence</th><th>Confiance</th></tr></thead><tbody>';
   vigis.forEach((v,i)=>{const cc=confClass(v);
     html+='<tr class="row"><td><span class="cname">'+(v.chantier||"")+'</span><br><span class="period">'+(v.date||"")+" · "+(v.secteur||"")+'</span></td>'+
       '<td><select class="pick" data-i="'+i+'">'+opts(v.match)+'</select></td>'+
+      '<td>'+(v.match>=0?'<span class="conf man">'+((RAP_ACTIFS[v.match]&&RAP_ACTIFS[v.match].agence)||"IDF")+'</span>':'<span class="period">—</span>')+'</td>'+
       '<td><span class="conf '+cc[0]+'">'+cc[1]+'</span></td></tr>';});
   html+='</tbody></table>';
   const cov=coverage(); const pct=cov.attendues?Math.round(cov.recues/cov.attendues*100):0;
@@ -475,7 +481,23 @@ function renderGlobal(){
     html+='<tr class="row"><td class="cname">'+x.nom+'</td><td>'+x.att+'</td><td>'+x.rec+'</td><td><div class="gcell">'+bar+'</div></td></tr>';});
   html+='<tr class="row gtot"><td class="cname"><strong>TOTAL</strong></td><td><strong>'+totAtt+'</strong></td><td><strong>'+totRec+'</strong></td><td><div class="gcell"><div class="gbar big"><i style="width:'+Math.min(100,pct)+'%"></i></div><span class="gpct"><strong>'+pct+'%</strong></span></div></td></tr>';
   html+='</tbody></table>';
+
+  // --- Ventilation par agence (IDF cumule Fret+Bathy+Atelier+Équip.portuaires) ---
+  const AG=["IDF","NA","BPL"];
+  const coveredSet=new Set(); (window.__vigis||[]).forEach(v=>{if(v.match>=0)coveredSet.add(v.match);});
+  const perAg={}; AG.forEach(a=>perAg[a]={att:0,rec:0});
+  (RAP_ACTIFS||[]).forEach((c,i)=>{const a=AG.indexOf(c.agence)>=0?c.agence:"IDF"; perAg[a].att++; if(coveredSet.has(i))perAg[a].rec++;});
+  perAg.IDF.att+=fret.attendues+bathy+atelier; perAg.IDF.rec+=fret.recues+bathy+atelier;
+  html+='<div class="panel-title" style="margin-top:22px;font-size:15px"><span class="dot" style="background:var(--boat)"></span>Par agence</div>';
+  html+='<table class="gtab"><thead><tr><th>Agence</th><th>Attendues</th><th>Reçues</th><th style="width:34%">Réalisation</th></tr></thead><tbody>';
+  AG.forEach(a=>{const x=perAg[a]; const p=x.att?Math.round(x.rec/x.att*100):null;
+    const bar=p===null?'<span class="why">— (aucune)</span>':'<div class="gbar"><i style="width:'+Math.min(100,p)+'%"></i></div><span class="gpct">'+p+'%</span>';
+    html+='<tr class="row"><td class="cname">'+a+'</td><td>'+x.att+'</td><td>'+x.rec+'</td><td><div class="gcell">'+bar+'</div></td></tr>';});
+  html+='<tr class="row gtot"><td class="cname"><strong>GLOBAL</strong></td><td><strong>'+totAtt+'</strong></td><td><strong>'+totRec+'</strong></td><td><div class="gcell"><div class="gbar big"><i style="width:'+Math.min(100,pct)+'%"></i></div><span class="gpct"><strong>'+pct+'%</strong></span></div></td></tr>';
+  html+='</tbody></table>';
+
   window.__global={secteurs,totAtt,totRec,pct};
+  window.__agences=AG.map(a=>({agence:a,att:perAg[a].att,rec:perAg[a].rec}));
   $("#globalResult").innerHTML=html;
 }
 function moisRattachement(du,au){
