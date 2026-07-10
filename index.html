@@ -489,9 +489,13 @@ function renderGlobal(){
   // --- Ventilation par agence (IDF cumule Fret+Bathy+Atelier+Équip.portuaires) ---
   const AG=["IDF","NA","BPL"];
   const coveredSet=new Set(); (window.__vigis||[]).forEach(v=>{if(v.match>=0)coveredSet.add(v.match);});
-  const perAg={}; AG.forEach(a=>perAg[a]={att:0,rec:0});
-  (RAP_ACTIFS||[]).forEach((c,i)=>{const a=AG.indexOf(c.agence)>=0?c.agence:"IDF"; perAg[a].att++; if(coveredSet.has(i))perAg[a].rec++;});
-  perAg.IDF.att+=fret.attendues+bathy+atelier; perAg.IDF.rec+=fret.recues+bathy+atelier;
+  const perAgE={}; AG.forEach(a=>perAgE[a]={att:0,rec:0,manq:[]});
+  (RAP_ACTIFS||[]).forEach((c,i)=>{const a=AG.indexOf(c.agence)>=0?c.agence:"IDF"; perAgE[a].att++; if(coveredSet.has(i))perAgE[a].rec++; else perAgE[a].manq.push(c.nom);});
+  const fretManqNames=(bateaux||[]).filter(b=>b.present&&b.keep&&!(b.fretMatch>=0)).map(b=>"Bateau "+b.nom);
+  const comByAg={IDF:[],NA:[],BPL:[]};
+  (chantiers||[]).filter(c=>!c.keep && !/fret/i.test(c.nom) && (c.why||"").trim()).forEach(c=>{const a=AG.indexOf(c.agence)>=0?c.agence:"IDF"; comByAg[a].push(c.nom+" : "+c.why.trim());});
+  (bateaux||[]).filter(b=>b.present&&!b.keep&&(b.cmt||"").trim()).forEach(b=>comByAg.IDF.push(b.nom+" : "+b.cmt.trim()));
+  const perAg={}; AG.forEach(a=>{const isI=a==="IDF"; perAg[a]={att:perAgE[a].att+(isI?(fret.attendues+bathy+atelier):0), rec:perAgE[a].rec+(isI?(fret.recues+bathy+atelier):0)};});
   html+='<div class="panel-title" style="margin-top:22px;font-size:15px"><span class="dot" style="background:var(--boat)"></span>Par agence</div>';
   html+='<table class="gtab"><thead><tr><th>Agence</th><th>Attendues</th><th>Reçues</th><th style="width:34%">Réalisation</th></tr></thead><tbody>';
   AG.forEach(a=>{const x=perAg[a]; const p=x.att?Math.round(x.rec/x.att*100):null;
@@ -501,7 +505,13 @@ function renderGlobal(){
   html+='</tbody></table>';
 
   window.__global={secteurs,totAtt,totRec,pct};
-  window.__agences=AG.map(a=>({agence:a,att:perAg[a].att,rec:perAg[a].rec}));
+  window.__agences=AG.map(a=>{const isI=a==="IDF"; return {agence:a,
+    exploAtt:perAgE[a].att, exploRec:perAgE[a].rec,
+    fretAtt:isI?fret.attendues:0, fretRec:isI?fret.recues:0,
+    bathy:isI?bathy:0, atelier:isI?atelier:0,
+    att:perAg[a].att, rec:perAg[a].rec,
+    manquants:perAgE[a].manq.concat(isI?fretManqNames:[]).join("\n"),
+    commentaires:comByAg[a].join("\n")};});
   $("#globalResult").innerHTML=html;
 }
 function moisRattachement(du,au){
@@ -523,7 +533,8 @@ $("#reporter").addEventListener("click",()=>{
   const comBt=(bateaux||[]).filter(b=>b.present && !b.keep && (b.cmt||"").trim()).map(b=>b.nom+" : "+b.cmt.trim());
   const commentaires=comCh.concat(comBt).join("\n");                                // un élément par ligne
   const p={type:"report",semaine:fmt(du)+" → "+fmt(au),du:$("#du").value,au:$("#au").value,
-    mois:moisRattachement(du,au),secteurs:g.secteurs,totAtt:g.totAtt,totRec:g.totRec,pct:g.pct,manquants,commentaires};
+    mois:moisRattachement(du,au),secteurs:g.secteurs,totAtt:g.totAtt,totRec:g.totRec,pct:g.pct,
+    agences:(window.__agences||[]),manquants,commentaires};
   $("#reporter").textContent="Report…"; $("#repinfo").textContent="";
   fetch(WEBHOOK_URL,{method:"POST",mode:"no-cors",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify(p)})
     .then(()=>{$("#reporter").textContent="Reporté ✓";$("#repinfo").textContent="Vérifie les onglets HISTORIQUE et BILAN HEBDO du classeur.";setTimeout(()=>$("#reporter").textContent="Reporter dans le classeur",2500);})
