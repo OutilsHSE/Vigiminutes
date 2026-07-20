@@ -171,9 +171,9 @@ input.cmt:focus{outline:2px solid var(--teal-bright);outline-offset:0;border-col
     <div class="actions"><button class="btn ghost" id="loadVigis">Charger les Vigiminutes reçues</button><span class="note" id="vgcount" style="margin:0"></span></div>
     <div id="vglist" style="margin-top:10px;overflow-x:auto"></div>
 
-    <div class="panel-title" style="margin-top:28px"><span class="dot" style="background:var(--teal-bright)"></span>Rapprochement Exploitation</div>
+    <div class="actions" style="margin-top:28px"><button class="btn primary" id="rapprocher">Rapprocher avec l'IA</button><span class="note" id="rpinfo" style="margin:0"></span></div>
+    <div class="panel-title" style="margin-top:20px"><span class="dot" style="background:var(--teal-bright)"></span>Rapprochement Exploitation</div>
     <p class="note" style="margin-top:2px">L'IA relie chaque Vigiminute reçue à un chantier actif. Vérifie les lignes en couleur (orange/rouge) et corrige au menu déroulant : relier, changer, ou « aucun ».</p>
-    <div class="actions"><button class="btn primary" id="rapprocher">Rapprocher avec l'IA</button><span class="note" id="rpinfo" style="margin:0"></span></div>
     <div id="rapproResult" style="margin-top:12px;overflow-x:auto"></div>
 
     <div class="panel-title" style="margin-top:28px"><span class="dot" style="background:var(--boat)"></span>Rapprochement Fret Fluvial</div>
@@ -595,10 +595,9 @@ async function coterRemIA(){
 }
 function renderRem(){
   const opt=(arr,sel)=>arr.map(o=>{const v=Array.isArray(o)?o[0]:o,l=Array.isArray(o)?o[1]:(o||"—");return '<option value="'+v+'"'+(sel===v?" selected":"")+'>'+l+'</option>';}).join("");
-  let html='<table><thead><tr><th></th><th>N°</th><th>Date</th><th>Sem.</th><th>Chantier</th><th>Sujet de la remontée</th><th>Type</th><th>Domaine</th><th>Impact</th><th>Délai</th><th>Report PA</th></tr></thead><tbody>';
+  let html='<table><thead><tr><th></th><th>N°</th><th>Date</th><th>Sem.</th><th>Chantier</th><th>Sujet de la remontée</th><th>Type</th><th>Domaine</th><th>Impact</th></tr></thead><tbody>';
   REMONTEES.forEach((r,i)=>{
     const bp=r.type==="BP";
-    const rpa=reportPA(r); const cls=rpa==="Oui"?"lo":(rpa==="Non"?"hi":"man");
     const grisCell='<td style="background:#EDEDED"></td>';
     const tcol=TYPE_COL[r.type]; const tstyle=tcol?(' style="background:'+tcol+'22;font-weight:600;color:'+tcol+'"'):'';
     html+='<tr class="row">'+
@@ -608,19 +607,17 @@ function renderRem(){
       '<td'+tstyle+'><select class="rem-t" data-i="'+i+'">'+opt(T_OPT,r.type)+'</select></td>'+
       '<td><select class="rem-d" data-i="'+i+'">'+opt(D_OPT,r.domaine)+'</select></td>'+
       (bp?grisCell:('<td><select class="rem-i" data-i="'+i+'">'+opt(I_OPT,String(r.impact||""))+'</select></td>'))+
-      (bp?grisCell:('<td><select class="rem-del" data-i="'+i+'">'+opt(DEL_OPT,r.delai)+'</select></td>'))+
-      (bp?grisCell:('<td><span class="conf '+cls+'">'+(rpa||"—")+'</span></td>'))+
       '</tr>';
   });
   html+='</tbody></table>';
   $("#remResult").innerHTML=html; $("#remActions").style.display="flex";
   const bind=(cls,key)=>$("#remResult").querySelectorAll(cls).forEach(sl=>sl.addEventListener("change",()=>{REMONTEES[+sl.dataset.i][key]=sl.value;renderRem();}));
-  bind(".rem-t","type"); bind(".rem-d","domaine"); bind(".rem-i","impact"); bind(".rem-del","delai");
+  bind(".rem-t","type"); bind(".rem-d","domaine"); bind(".rem-i","impact");
   $("#remResult").querySelectorAll(".rem-del-btn").forEach(btn=>btn.addEventListener("click",()=>{REMONTEES.splice(+btn.dataset.i,1);REMONTEES.forEach((x,k)=>x.n=k+1);renderRem();}));
 }
 $("#reporterRem").addEventListener("click",()=>{
   if(!REMONTEES.length){alert("Charge d'abord les remontées.");return;}
-  const items=REMONTEES.map(r=>{const bp=r.type==="BP";return {date:dateFR(r.date),semaine:r.semaine||"",chantier:r.chantier||"",sujet:sujetRem(r),type:r.type||"",domaine:r.domaine||"",impact:bp?"":(r.impact||""),delai:bp?"":(r.delai||""),reportPA:reportPA(r),photo:r.photo||""};});
+  const items=REMONTEES.map(r=>{const bp=r.type==="BP";return {date:dateFR(r.date),semaine:r.semaine||"",chantier:r.chantier||"",sujet:sujetRem(r),type:r.type||"",domaine:r.domaine||"",impact:bp?"":(r.impact||""),photo:r.photo||""};});
   const p={type:"planactions",items};
   $("#reporterRem").textContent="Report…"; $("#remrep").textContent="";
   fetch(WEBHOOK_URL,{method:"POST",mode:"no-cors",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify(p)})
