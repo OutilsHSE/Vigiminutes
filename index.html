@@ -171,14 +171,11 @@ input.cmt:focus{outline:2px solid var(--teal-bright);outline-offset:0;border-col
     <div class="actions"><button class="btn ghost" id="loadVigis">Charger les Vigiminutes reçues</button><span class="note" id="vgcount" style="margin:0"></span></div>
     <div id="vglist" style="margin-top:10px;overflow-x:auto"></div>
 
-    <div class="actions" style="margin-top:28px"><button class="btn primary" id="rapprocher">Rapprocher avec l'IA</button><span class="note" id="rpinfo" style="margin:0"></span></div>
-    <div class="panel-title" style="margin-top:20px"><span class="dot" style="background:var(--teal-bright)"></span>Rapprochement Exploitation</div>
-    <p class="note" style="margin-top:2px">L'IA relie chaque Vigiminute reçue à un chantier actif. Vérifie les lignes en couleur (orange/rouge) et corrige au menu déroulant : relier, changer, ou « aucun ».</p>
-    <div id="rapproResult" style="margin-top:12px;overflow-x:auto"></div>
-
-    <div class="panel-title" style="margin-top:28px"><span class="dot" style="background:var(--boat)"></span>Rapprochement Fret Fluvial</div>
-    <p class="note" style="margin-top:2px">Chaque bateau actif est relié à sa Vigiminute Fret. Corrige au menu déroulant si besoin.</p>
-    <div id="fretResult" style="margin-top:8px;overflow-x:auto"></div>
+    <div class="panel-title" style="margin-top:28px"><span class="dot" style="background:var(--teal-bright)"></span>Rapprochement — Exploitation &amp; Fret Fluvial</div>
+    <p class="note" style="margin-top:2px">L'IA relie chaque Vigiminute reçue à un chantier actif. Vérifie les lignes en couleur (orange/rouge) et corrige au menu déroulant : relier, changer, ou « aucun ». Côté Fret, chaque bateau actif est relié à sa Vigiminute (corrige au menu déroulant si besoin).</p>
+    <div class="actions" style="margin-top:12px"><button class="btn primary" id="rapprocher">Rapprocher avec l'IA</button><span class="note" id="rpinfo" style="margin:0"></span></div>
+    <div id="rapproResult" style="margin-top:16px;overflow-x:auto"></div>
+    <div id="fretResult" style="margin-top:16px;overflow-x:auto"></div>
 
     <div class="panel-title" style="margin-top:28px"><span class="dot" style="background:var(--navy)"></span>Bilan global de la semaine</div>
     <p class="note" style="margin-top:2px">Les quatre familles assemblées selon leurs règles. Se met à jour quand tu corriges un rapprochement.</p>
