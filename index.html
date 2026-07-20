@@ -567,7 +567,7 @@ $("#loadRem").addEventListener("click",()=>{
   const cb="__rem_"+Date.now()+Math.floor(Math.random()*1000); const sc=document.createElement("script");
   window[cb]=async d=>{ try{delete window[cb]}catch(_){} sc.remove();
     REMONTEES=(d||[]).filter(r=>{const dt=toDate(r.date); return dt&&dt>=du&&dt<=au;})
-      .map((r,i)=>({date:r.date,semaine:r.semaine,mois:r.mois,chantier:r.chantier,observation:r.observation,risque:r.risque,photo:r.photo,n:i+1,type:"",domaine:"",impact:"",delai:"",loading:true}));
+      .map((r,i)=>({date:r.date,agence:r.agence||"",semaine:r.semaine,mois:r.mois,chantier:r.chantier,observation:r.observation,risque:r.risque,photo:r.photo,n:i+1,type:"",domaine:"",impact:"",loading:true}));
     $("#loadRem").textContent="Recharger les remontées";
     $("#remcount").textContent=REMONTEES.length+" remontée(s)";
     if(!REMONTEES.length){$("#remResult").innerHTML='<p class="note">Aucune remontée trouvée dans le journal.</p>';$("#remActions").style.display="none";return;}
@@ -592,14 +592,14 @@ async function coterRemIA(){
 }
 function renderRem(){
   const opt=(arr,sel)=>arr.map(o=>{const v=Array.isArray(o)?o[0]:o,l=Array.isArray(o)?o[1]:(o||"—");return '<option value="'+v+'"'+(sel===v?" selected":"")+'>'+l+'</option>';}).join("");
-  let html='<table><thead><tr><th></th><th>N°</th><th>Date</th><th>Sem.</th><th>Chantier</th><th>Sujet de la remontée</th><th>Type</th><th>Domaine</th><th>Impact</th></tr></thead><tbody>';
+  let html='<table><thead><tr><th></th><th>N°</th><th>Date</th><th>Sem.</th><th>Agence</th><th>Chantier</th><th>Sujet de la remontée</th><th>Type</th><th>Domaine</th><th>Impact</th></tr></thead><tbody>';
   REMONTEES.forEach((r,i)=>{
     const bp=r.type==="BP";
     const grisCell='<td style="background:#EDEDED"></td>';
     const tcol=TYPE_COL[r.type]; const tstyle=tcol?(' style="background:'+tcol+'22;font-weight:600;color:'+tcol+'"'):'';
     html+='<tr class="row">'+
       '<td><button class="rem-del-btn" data-i="'+i+'" title="Supprimer cette remontée">\u2715</button></td>'+
-      '<td>'+r.n+'</td><td class="period">'+dateFR(r.date)+'</td><td>'+(r.semaine||"")+'</td><td class="cname">'+(r.chantier||"")+'</td>'+
+      '<td>'+r.n+'</td><td class="period">'+dateFR(r.date)+'</td><td>'+(r.semaine||"")+'</td><td>'+(r.agence?'<span class="conf man">'+r.agence+'</span>':'<span class="period">—</span>')+'</td><td class="cname">'+(r.chantier||"")+'</td>'+
       '<td style="max-width:340px"><span class="period" style="white-space:normal;display:inline-block;line-height:1.45">'+(sujetRem(r)||"—")+(r.loading?' · <em>cotation…</em>':'')+(r.photo?' <a href="'+r.photo+'" target="_blank" rel="noopener" class="photo-ic" title="Voir la photo">\ud83d\udcf7</a>':'')+'</span></td>'+
       '<td'+tstyle+'><select class="rem-t" data-i="'+i+'">'+opt(T_OPT,r.type)+'</select></td>'+
       '<td><select class="rem-d" data-i="'+i+'">'+opt(D_OPT,r.domaine)+'</select></td>'+
@@ -614,7 +614,7 @@ function renderRem(){
 }
 $("#reporterRem").addEventListener("click",()=>{
   if(!REMONTEES.length){alert("Charge d'abord les remontées.");return;}
-  const items=REMONTEES.map(r=>{const bp=r.type==="BP";return {date:dateFR(r.date),semaine:r.semaine||"",chantier:r.chantier||"",sujet:sujetRem(r),type:r.type||"",domaine:r.domaine||"",impact:bp?"":(r.impact||""),photo:r.photo||""};});
+  const items=REMONTEES.map(r=>{const bp=r.type==="BP";return {date:dateFR(r.date),semaine:r.semaine||"",agence:r.agence||"",chantier:r.chantier||"",sujet:sujetRem(r),type:r.type||"",domaine:r.domaine||"",impact:bp?"":(r.impact||""),photo:r.photo||""};});
   const p={type:"planactions",items};
   $("#reporterRem").textContent="Report…"; $("#remrep").textContent="";
   fetch(WEBHOOK_URL,{method:"POST",mode:"no-cors",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify(p)})
