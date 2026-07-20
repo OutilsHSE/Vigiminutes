@@ -182,6 +182,14 @@ input.cmt:focus{outline:2px solid var(--teal-bright);outline-offset:0;border-col
     <div id="globalResult" style="margin-top:8px;overflow-x:auto"></div>
     <div class="actions" style="margin-top:14px"><button class="btn primary" id="reporter">Reporter dans le classeur</button><span class="note" id="repinfo" style="margin:0"></span></div>
   </section>
+
+  <section class="card" id="remontees">
+    <div class="panel-title"><span class="dot" style="background:var(--excl)"></span>Remontées terrain — Plan d'actions</div>
+    <p class="note" style="margin-top:2px">Charge les observations des Vigiminutes ; l'IA propose le type, le domaine et l'impact. Ajuste si besoin, choisis le délai d'action, puis reporte dans le plan d'actions. (BP = pas d'impact ni d'action.)</p>
+    <div class="actions"><button class="btn primary" id="loadRem">Charger les remontées</button><span class="note" id="remcount" style="margin:0"></span></div>
+    <div id="remResult" style="margin-top:12px;overflow-x:auto"></div>
+    <div class="actions" id="remActions" style="margin-top:14px;display:none"><button class="btn primary" id="reporterRem">Reporter dans le plan d'actions</button><span class="note" id="remrep" style="margin:0"></span></div>
+  </section>
 </div>
 
 <script>
@@ -539,6 +547,69 @@ $("#reporter").addEventListener("click",()=>{
   fetch(WEBHOOK_URL,{method:"POST",mode:"no-cors",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify(p)})
     .then(()=>{$("#reporter").textContent="Reporté ✓";$("#repinfo").textContent="Vérifie les onglets HISTORIQUE et BILAN HEBDO du classeur.";setTimeout(()=>$("#reporter").textContent="Reporter dans le classeur",2500);})
     .catch(()=>{$("#reporter").textContent="Erreur";setTimeout(()=>$("#reporter").textContent="Reporter dans le classeur",2000);});
+});
+
+/* ===================== REMONTÉES TERRAIN (plan d'actions) ===================== */
+const T_OPT=[["","—"],["BP","BP"],["PA","PA"],["SD","SD"],["PAT","Presqu'AT"]];
+const D_OPT=["","Santé","Sécurité","Environnement","Réglementation","Culture SSE"];
+const I_OPT=["","1","2","3","4"];
+const DEL_OPT=[["","à coter"],["<2s","< 2 semaines"],[">2s","> 2 semaines"]];
+let REMONTEES=[];
+function reportPA(r){ if(r.type==="BP"||r.type==="") return ""; if(r.type==="PAT"||(+r.impact>=3)||r.delai===">2s") return "Oui"; return "Non"; }
+function sujetRem(r){ return r.observation||(r.risque?("Risque : "+r.risque):(r.photo?"(photo — à traiter)":"")); }
+$("#loadRem").addEventListener("click",()=>{
+  const url=$("#hook").value.trim(); if(!url){alert("URL webhook absente.");return;}
+  $("#loadRem").textContent="Chargement…"; $("#remcount").textContent="";
+  const cb="__rem_"+Date.now()+Math.floor(Math.random()*1000); const sc=document.createElement("script");
+  window[cb]=async d=>{ try{delete window[cb]}catch(_){} sc.remove();
+    REMONTEES=(d||[]).map((r,i)=>({semaine:r.semaine,mois:r.mois,chantier:r.chantier,observation:r.observation,risque:r.risque,photo:r.photo,n:i+1,type:"",domaine:"",impact:"",delai:"",loading:true}));
+    $("#loadRem").textContent="Recharger les remontées";
+    $("#remcount").textContent=REMONTEES.length+" remontée(s)";
+    if(!REMONTEES.length){$("#remResult").innerHTML='<p class="note">Aucune remontée trouvée dans le journal.</p>';$("#remActions").style.display="none";return;}
+    renderRem(); await coterRemIA();
+  };
+  sc.onerror=()=>{$("#loadRem").textContent="Charger les remontées";$("#remcount").textContent="Échec de lecture (teste depuis GitHub, pas l'aperçu).";sc.remove();};
+  sc.src=url+(url.indexOf("?")>=0?"&":"?")+"action=remontees&callback="+cb;
+  document.body.appendChild(sc);
+});
+async function coterRemIA(){
+  const aCoter=REMONTEES.filter(r=>r.observation||r.risque);
+  if(!aCoter.length){REMONTEES.forEach(r=>r.loading=false);renderRem();return;}
+  const liste=aCoter.map((r,i)=>i+": "+(r.observation||"")+(r.risque?(" [Risque particulier: "+r.risque+"]"):"")).join("\n");
+  const sys="Tu es un expert HSE chez CDES (dragage, faucardage, travaux au bord de l'eau). Pour chaque observation terrain numérotée, donne : type (BP = bonne pratique, PA = point d'amélioration, SD = situation dangereuse, PAT = presqu'accident) ; domaine (Santé, Sécurité, Environnement, Réglementation, Culture SSE) ; impact (1 = local, 2 = modéré, 3 = majeur, 4 = critique ; pour une BP mettre 0). Réponds UNIQUEMENT en JSON : {\"r\":[{\"i\":0,\"type\":\"SD\",\"domaine\":\"Sécurité\",\"impact\":3}]}";
+  try{
+    const t=await groqJSON(sys,"Observations :\n"+liste);
+    ((JSON.parse(t).r)||[]).forEach(o=>{const r=aCoter[o.i]; if(r){r.type=o.type||"";r.domaine=o.domaine||"";r.impact=(o.impact||o.impact===0)?String(o.impact):"";if(r.impact==="0")r.impact="";}});
+  }catch(e){$("#remrep").textContent="IA indisponible — cote à la main.";}
+  REMONTEES.forEach(r=>r.loading=false); renderRem();
+}
+function renderRem(){
+  const opt=(arr,sel)=>arr.map(o=>{const v=Array.isArray(o)?o[0]:o,l=Array.isArray(o)?o[1]:(o||"—");return '<option value="'+v+'"'+(sel===v?" selected":"")+'>'+l+'</option>';}).join("");
+  let html='<table><thead><tr><th>N°</th><th>Sem.</th><th>Mois</th><th>Chantier</th><th>Sujet de la remontée</th><th>Type</th><th>Domaine</th><th>Impact</th><th>Délai</th><th>Report PA</th></tr></thead><tbody>';
+  REMONTEES.forEach((r,i)=>{
+    const bp=r.type==="BP"; const grise=bp?' style="opacity:.35;pointer-events:none"':'';
+    const rpa=reportPA(r); const cls=rpa==="Oui"?"lo":(rpa==="Non"?"hi":"man");
+    html+='<tr class="row"><td>'+r.n+'</td><td>'+(r.semaine||"")+'</td><td>'+(r.mois||"")+'</td><td class="cname">'+(r.chantier||"")+'</td>'+
+      '<td><span class="period">'+(sujetRem(r)||"—")+(r.loading?' · <em>cotation…</em>':'')+'</span></td>'+
+      '<td><select class="rem-t" data-i="'+i+'">'+opt(T_OPT,r.type)+'</select></td>'+
+      '<td><select class="rem-d" data-i="'+i+'">'+opt(D_OPT,r.domaine)+'</select></td>'+
+      '<td'+grise+'><select class="rem-i" data-i="'+i+'">'+opt(I_OPT,String(r.impact||""))+'</select></td>'+
+      '<td'+grise+'><select class="rem-del" data-i="'+i+'">'+opt(DEL_OPT,r.delai)+'</select></td>'+
+      '<td><span class="conf '+cls+'">'+(rpa||"—")+'</span></td></tr>';
+  });
+  html+='</tbody></table>';
+  $("#remResult").innerHTML=html; $("#remActions").style.display="flex";
+  const bind=(cls,key)=>$("#remResult").querySelectorAll(cls).forEach(sl=>sl.addEventListener("change",()=>{REMONTEES[+sl.dataset.i][key]=sl.value;renderRem();}));
+  bind(".rem-t","type"); bind(".rem-d","domaine"); bind(".rem-i","impact"); bind(".rem-del","delai");
+}
+$("#reporterRem").addEventListener("click",()=>{
+  if(!REMONTEES.length){alert("Charge d'abord les remontées.");return;}
+  const items=REMONTEES.map(r=>{const bp=r.type==="BP";return {semaine:r.semaine||"",mois:r.mois||"",chantier:r.chantier||"",sujet:sujetRem(r),type:r.type||"",domaine:r.domaine||"",impact:bp?"":(r.impact||""),delai:bp?"":(r.delai||""),reportPA:reportPA(r)};});
+  const p={type:"planactions",items};
+  $("#reporterRem").textContent="Report…"; $("#remrep").textContent="";
+  fetch(WEBHOOK_URL,{method:"POST",mode:"no-cors",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify(p)})
+    .then(()=>{$("#reporterRem").textContent="Reporté ✓";$("#remrep").textContent="Vérifie l'onglet PLAN D'ACTIONS du classeur.";setTimeout(()=>$("#reporterRem").textContent="Reporter dans le plan d'actions",2500);})
+    .catch(()=>{$("#reporterRem").textContent="Erreur";setTimeout(()=>$("#reporterRem").textContent="Reporter dans le plan d'actions",2000);});
 });
 </script>
 </body>
