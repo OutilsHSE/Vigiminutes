@@ -86,6 +86,9 @@ select.pick{font-family:Inter;font-size:12.5px;padding:6px 8px;border:1px solid 
 .gpct{font-family:"JetBrains Mono";font-size:12px;color:var(--navy);min-width:38px;text-align:right}
 .trash{border:none;background:none;cursor:pointer;font-size:13px;opacity:.55;padding:0 2px}
 .warn{color:#C0392B;font-size:14px;cursor:help}
+.photo-ic{text-decoration:none;font-size:14px;cursor:pointer}
+.rem-del-btn{border:none;background:none;color:#C0392B;cursor:pointer;font-size:14px;opacity:.6;padding:0 4px}
+.rem-del-btn:hover{opacity:1}
 select.agc{font-family:Inter;font-size:12.5px;padding:5px 7px;border:1px solid var(--line);border-radius:7px;background:#fff;color:var(--ink)}
 input.cmt{width:100%;min-width:150px;border:1px solid transparent;border-radius:7px;padding:6px 8px;font-family:Inter;font-size:12.5px;font-style:italic;color:var(--muted);background:transparent}
 input.cmt:hover{border-color:var(--line);background:#FBFAF7}
@@ -553,10 +556,12 @@ $("#reporter").addEventListener("click",()=>{
 const T_OPT=[["","—"],["BP","BP"],["PA","PA"],["SD","SD"],["PAT","Presqu'AT"]];
 const D_OPT=["","Santé","Sécurité","Environnement","Réglementation","Culture SSE"];
 const I_OPT=["","1","2","3","4"];
-const DEL_OPT=[["","à coter"],["<2s","< 2 semaines"],[">2s","> 2 semaines"]];
+const DEL_OPT=[["","à définir"],["<2s","< 2 semaines"],[">2s","> 2 semaines"]];
 let REMONTEES=[];
 function reportPA(r){ if(r.type==="BP"||r.type==="") return ""; if(r.type==="PAT"||(+r.impact>=3)||r.delai===">2s") return "Oui"; return "Non"; }
-function sujetRem(r){ return r.observation||(r.risque?("Risque : "+r.risque):(r.photo?"(photo — à traiter)":"")); }
+function dateFR(iso){ const d=toDate(iso); if(!d) return (iso||""); return d.getDate()+" "+MOIS_FR[d.getMonth()]+" "+d.getFullYear(); }
+const TYPE_COL={BP:"#1E9E76",PA:"#E67E22",SD:"#C0392B",PAT:"#7B241C"};
+function sujetRem(r){ return r.observation||(r.risque?("Risque : "+r.risque):(r.photo?"\ud83d\udcf7 Remontée sous forme de photo":"")); }
 $("#loadRem").addEventListener("click",()=>{
   const url=$("#hook").value.trim(); if(!url){alert("URL webhook absente.");return;}
   const du=toDate($("#du").value), au=toDate($("#au").value);
@@ -590,26 +595,32 @@ async function coterRemIA(){
 }
 function renderRem(){
   const opt=(arr,sel)=>arr.map(o=>{const v=Array.isArray(o)?o[0]:o,l=Array.isArray(o)?o[1]:(o||"—");return '<option value="'+v+'"'+(sel===v?" selected":"")+'>'+l+'</option>';}).join("");
-  let html='<table><thead><tr><th>N°</th><th>Sem.</th><th>Mois</th><th>Chantier</th><th>Sujet de la remontée</th><th>Type</th><th>Domaine</th><th>Impact</th><th>Délai</th><th>Report PA</th></tr></thead><tbody>';
+  let html='<table><thead><tr><th></th><th>N°</th><th>Date</th><th>Sem.</th><th>Chantier</th><th>Sujet de la remontée</th><th>Type</th><th>Domaine</th><th>Impact</th><th>Délai</th><th>Report PA</th></tr></thead><tbody>';
   REMONTEES.forEach((r,i)=>{
-    const bp=r.type==="BP"; const grise=bp?' style="opacity:.35;pointer-events:none"':'';
+    const bp=r.type==="BP";
     const rpa=reportPA(r); const cls=rpa==="Oui"?"lo":(rpa==="Non"?"hi":"man");
-    html+='<tr class="row"><td>'+r.n+'</td><td>'+(r.semaine||"")+'</td><td>'+(r.mois||"")+'</td><td class="cname">'+(r.chantier||"")+'</td>'+
-      '<td style="max-width:340px"><span class="period" style="white-space:normal;display:inline-block;line-height:1.45">'+(sujetRem(r)||"—")+(r.loading?' · <em>cotation…</em>':'')+'</span></td>'+
-      '<td><select class="rem-t" data-i="'+i+'">'+opt(T_OPT,r.type)+'</select></td>'+
+    const grisCell='<td style="background:#EDEDED"></td>';
+    const tcol=TYPE_COL[r.type]; const tstyle=tcol?(' style="background:'+tcol+'22;font-weight:600;color:'+tcol+'"'):'';
+    html+='<tr class="row">'+
+      '<td><button class="rem-del-btn" data-i="'+i+'" title="Supprimer cette remontée">\u2715</button></td>'+
+      '<td>'+r.n+'</td><td class="period">'+dateFR(r.date)+'</td><td>'+(r.semaine||"")+'</td><td class="cname">'+(r.chantier||"")+'</td>'+
+      '<td style="max-width:340px"><span class="period" style="white-space:normal;display:inline-block;line-height:1.45">'+(sujetRem(r)||"—")+(r.loading?' · <em>cotation…</em>':'')+(r.photo?' <a href="'+r.photo+'" target="_blank" rel="noopener" class="photo-ic" title="Voir la photo">\ud83d\udcf7</a>':'')+'</span></td>'+
+      '<td'+tstyle+'><select class="rem-t" data-i="'+i+'">'+opt(T_OPT,r.type)+'</select></td>'+
       '<td><select class="rem-d" data-i="'+i+'">'+opt(D_OPT,r.domaine)+'</select></td>'+
-      '<td'+grise+'><select class="rem-i" data-i="'+i+'">'+opt(I_OPT,String(r.impact||""))+'</select></td>'+
-      '<td'+grise+'><select class="rem-del" data-i="'+i+'">'+opt(DEL_OPT,r.delai)+'</select></td>'+
-      '<td><span class="conf '+cls+'">'+(rpa||"—")+'</span></td></tr>';
+      (bp?grisCell:('<td><select class="rem-i" data-i="'+i+'">'+opt(I_OPT,String(r.impact||""))+'</select></td>'))+
+      (bp?grisCell:('<td><select class="rem-del" data-i="'+i+'">'+opt(DEL_OPT,r.delai)+'</select></td>'))+
+      (bp?grisCell:('<td><span class="conf '+cls+'">'+(rpa||"—")+'</span></td>'))+
+      '</tr>';
   });
   html+='</tbody></table>';
   $("#remResult").innerHTML=html; $("#remActions").style.display="flex";
   const bind=(cls,key)=>$("#remResult").querySelectorAll(cls).forEach(sl=>sl.addEventListener("change",()=>{REMONTEES[+sl.dataset.i][key]=sl.value;renderRem();}));
   bind(".rem-t","type"); bind(".rem-d","domaine"); bind(".rem-i","impact"); bind(".rem-del","delai");
+  $("#remResult").querySelectorAll(".rem-del-btn").forEach(btn=>btn.addEventListener("click",()=>{REMONTEES.splice(+btn.dataset.i,1);REMONTEES.forEach((x,k)=>x.n=k+1);renderRem();}));
 }
 $("#reporterRem").addEventListener("click",()=>{
   if(!REMONTEES.length){alert("Charge d'abord les remontées.");return;}
-  const items=REMONTEES.map(r=>{const bp=r.type==="BP";return {semaine:r.semaine||"",mois:r.mois||"",chantier:r.chantier||"",sujet:sujetRem(r),type:r.type||"",domaine:r.domaine||"",impact:bp?"":(r.impact||""),delai:bp?"":(r.delai||""),reportPA:reportPA(r)};});
+  const items=REMONTEES.map(r=>{const bp=r.type==="BP";return {date:dateFR(r.date),semaine:r.semaine||"",chantier:r.chantier||"",sujet:sujetRem(r),type:r.type||"",domaine:r.domaine||"",impact:bp?"":(r.impact||""),delai:bp?"":(r.delai||""),reportPA:reportPA(r),photo:r.photo||""};});
   const p={type:"planactions",items};
   $("#reporterRem").textContent="Report…"; $("#remrep").textContent="";
   fetch(WEBHOOK_URL,{method:"POST",mode:"no-cors",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify(p)})
