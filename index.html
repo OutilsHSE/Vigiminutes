@@ -316,7 +316,7 @@ function render(du,au){
       <td><input class="cmt" data-ci="${i}" value="${(c.why||"").replace(/"/g,"&quot;")}"></td>`;
     tc.appendChild(tr);
   });
-  tc.querySelectorAll(".seg button").forEach(b=>b.addEventListener("click",()=>{chantiers[+b.dataset.i].keep=b.dataset.v==="1";render(du,au);}));
+  tc.querySelectorAll(".seg button").forEach(b=>b.addEventListener("click",()=>{chantiers[+b.dataset.i].keep=b.dataset.v==="1";render(du,au);if(($("#rapproResult").innerHTML||"").trim()){RAP_ACTIFS=chantiers.filter(c=>c.keep);renderRappro();}}));
   tc.querySelectorAll(".trash").forEach(b=>b.addEventListener("click",()=>{chantiers.splice(+b.dataset.del,1);render(du,au);if(($("#rapproResult").innerHTML||"").trim()){RAP_ACTIFS=chantiers.filter(c=>c.keep);renderRappro();}}));
   tc.querySelectorAll("input.cmt").forEach(inp=>inp.addEventListener("input",()=>{chantiers[+inp.dataset.ci].why=inp.value;}));
   tc.querySelectorAll("select.agc").forEach(sel=>sel.addEventListener("change",()=>{const c=chantiers[+sel.dataset.ai];c.agence=sel.value;c.agenceManuel=true;if(($("#rapproResult").innerHTML||"").trim()){RAP_ACTIFS=chantiers.filter(c=>c.keep);renderRappro();}}));
@@ -446,9 +446,7 @@ function renderRappro(){
       '<td>'+(v.match<0?'<span class="period">—</span>':((function(){const chAg=(RAP_ACTIFS[v.match]&&RAP_ACTIFS[v.match].agence)||"IDF";const div=v.agence&&v.agence!==chAg;return '<span class="conf man">'+chAg+'</span>'+(div?' <span class="warn" title="La Vigiminute indique '+v.agence+'">\u26a0</span>':'');})()))+'</td>'+
       '<td><span class="conf '+cc[0]+'">'+cc[1]+'</span></td></tr>';});
   html+='</tbody></table>';
-  const cov=coverage(); const pct=cov.attendues?Math.round(cov.recues/cov.attendues*100):0;
-  html+='<div class="bilan"><div class="bilan-pct">'+pct+'%</div><div class="bilan-lbl">Réalisation Exploitation<br><span>'+cov.recues+' / '+cov.attendues+' chantiers couverts</span></div></div>';
-  if(cov.manquants.length) html+='<div class="manq"><strong>Chantiers manquants ('+cov.manquants.length+') :</strong> '+cov.manquants.join(" · ")+'</div>';
+  const cov=coverage();
   $("#rapproResult").innerHTML=html;
   $("#rapproResult").querySelectorAll("select.pick").forEach(s=>s.addEventListener("change",()=>{const v=vigis[+s.dataset.i];v.match=parseInt(s.value);v.manuel=true;v.auto=false;renderRappro();}));
   window.__exploitation={recues:cov.recues,attendues:cov.attendues};
@@ -521,6 +519,11 @@ function renderGlobal(){
     html+='<tr class="row"><td class="cname">'+a+'</td><td>'+x.att+'</td><td>'+x.rec+'</td><td><div class="gcell">'+bar+'</div></td></tr>';});
   html+='<tr class="row gtot"><td class="cname"><strong>GLOBAL</strong></td><td><strong>'+totAtt+'</strong></td><td><strong>'+totRec+'</strong></td><td><div class="gcell"><div class="gbar big"><i style="width:'+Math.min(100,pct)+'%"></i></div><span class="gpct"><strong>'+pct+'%</strong></span></div></td></tr>';
   html+='</tbody></table>';
+
+  const cov2=coverage();
+  if(cov2.manquants.length) html+='<div class="manq"><strong>Chantiers manquants ('+cov2.manquants.length+') :</strong> '+cov2.manquants.join(" · ")+'</div>';
+  const sansVigi=secteurs.filter(x=>x.rec===0).map(x=>x.nom);
+  if(sansVigi.length) html+='<div class="manq" style="color:var(--muted)"><strong>Aucune Vigiminute :</strong> '+sansVigi.join(" · ")+'</div>';
 
   window.__global={secteurs,totAtt,totRec,pct};
   window.__agences=AG.map(a=>{const isI=a==="IDF"; return {agence:a,
