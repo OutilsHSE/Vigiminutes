@@ -559,10 +559,13 @@ function reportPA(r){ if(r.type==="BP"||r.type==="") return ""; if(r.type==="PAT
 function sujetRem(r){ return r.observation||(r.risque?("Risque : "+r.risque):(r.photo?"(photo — à traiter)":"")); }
 $("#loadRem").addEventListener("click",()=>{
   const url=$("#hook").value.trim(); if(!url){alert("URL webhook absente.");return;}
+  const du=toDate($("#du").value), au=toDate($("#au").value);
+  if(!du||!au){alert("Choisis d'abord une période (Du / Au) en haut de la page.");return;}
   $("#loadRem").textContent="Chargement…"; $("#remcount").textContent="";
   const cb="__rem_"+Date.now()+Math.floor(Math.random()*1000); const sc=document.createElement("script");
   window[cb]=async d=>{ try{delete window[cb]}catch(_){} sc.remove();
-    REMONTEES=(d||[]).map((r,i)=>({semaine:r.semaine,mois:r.mois,chantier:r.chantier,observation:r.observation,risque:r.risque,photo:r.photo,n:i+1,type:"",domaine:"",impact:"",delai:"",loading:true}));
+    REMONTEES=(d||[]).filter(r=>{const dt=toDate(r.date); return dt&&dt>=du&&dt<=au;})
+      .map((r,i)=>({date:r.date,semaine:r.semaine,mois:r.mois,chantier:r.chantier,observation:r.observation,risque:r.risque,photo:r.photo,n:i+1,type:"",domaine:"",impact:"",delai:"",loading:true}));
     $("#loadRem").textContent="Recharger les remontées";
     $("#remcount").textContent=REMONTEES.length+" remontée(s)";
     if(!REMONTEES.length){$("#remResult").innerHTML='<p class="note">Aucune remontée trouvée dans le journal.</p>';$("#remActions").style.display="none";return;}
@@ -579,8 +582,10 @@ async function coterRemIA(){
   const sys="Tu es un expert HSE chez CDES (dragage, faucardage, travaux au bord de l'eau). Pour chaque observation terrain numérotée, donne : type (BP = bonne pratique, PA = point d'amélioration, SD = situation dangereuse, PAT = presqu'accident) ; domaine (Santé, Sécurité, Environnement, Réglementation, Culture SSE) ; impact (1 = local, 2 = modéré, 3 = majeur, 4 = critique ; pour une BP mettre 0). Réponds UNIQUEMENT en JSON : {\"r\":[{\"i\":0,\"type\":\"SD\",\"domaine\":\"Sécurité\",\"impact\":3}]}";
   try{
     const t=await groqJSON(sys,"Observations :\n"+liste);
-    ((JSON.parse(t).r)||[]).forEach(o=>{const r=aCoter[o.i]; if(r){r.type=o.type||"";r.domaine=o.domaine||"";r.impact=(o.impact||o.impact===0)?String(o.impact):"";if(r.impact==="0")r.impact="";}});
-  }catch(e){$("#remrep").textContent="IA indisponible — cote à la main.";}
+    const arr=(JSON.parse(t).r)||[];
+    if(!arr.length){$("#remrep").textContent="Cotation IA vide — cote à la main.";}
+    arr.forEach(o=>{const r=aCoter[o.i]; if(r){r.type=o.type||"";r.domaine=o.domaine||"";r.impact=(o.impact||o.impact===0)?String(o.impact):"";if(r.impact==="0")r.impact="";}});
+  }catch(e){$("#remrep").textContent="Cotation IA indisponible — cote à la main.";}
   REMONTEES.forEach(r=>r.loading=false); renderRem();
 }
 function renderRem(){
@@ -590,7 +595,7 @@ function renderRem(){
     const bp=r.type==="BP"; const grise=bp?' style="opacity:.35;pointer-events:none"':'';
     const rpa=reportPA(r); const cls=rpa==="Oui"?"lo":(rpa==="Non"?"hi":"man");
     html+='<tr class="row"><td>'+r.n+'</td><td>'+(r.semaine||"")+'</td><td>'+(r.mois||"")+'</td><td class="cname">'+(r.chantier||"")+'</td>'+
-      '<td><span class="period">'+(sujetRem(r)||"—")+(r.loading?' · <em>cotation…</em>':'')+'</span></td>'+
+      '<td style="max-width:340px"><span class="period" style="white-space:normal;display:inline-block;line-height:1.45">'+(sujetRem(r)||"—")+(r.loading?' · <em>cotation…</em>':'')+'</span></td>'+
       '<td><select class="rem-t" data-i="'+i+'">'+opt(T_OPT,r.type)+'</select></td>'+
       '<td><select class="rem-d" data-i="'+i+'">'+opt(D_OPT,r.domaine)+'</select></td>'+
       '<td'+grise+'><select class="rem-i" data-i="'+i+'">'+opt(I_OPT,String(r.impact||""))+'</select></td>'+
