@@ -190,6 +190,16 @@ input.cmt:focus{outline:2px solid var(--teal-bright);outline-offset:0;border-col
     <div id="remResult" style="margin-top:12px;overflow-x:auto"></div>
     <div class="actions" id="remActions" style="margin-top:14px;display:none"><button class="btn primary" id="reporterRem">Reporter dans le plan d'actions</button><span class="note" id="remrep" style="margin:0"></span></div>
   </section>
+
+  <section class="card" id="mail">
+    <div class="panel-title"><span class="dot" style="background:var(--teal)"></span>Mail hebdomadaire</div>
+    <p class="note" style="margin-top:2px">Génère le mail de bilan (réalisation + agences + remontées) au format habituel. Copie le corps (couleurs comprises) et les destinataires, puis colle dans Outlook.</p>
+    <div class="actions"><button class="btn primary" id="prepMail">Préparer le mail</button></div>
+    <div id="mailBox" style="display:none;margin-top:12px">
+      <div class="actions"><button class="btn ghost" id="copyMail">Copier le corps du mail</button><button class="btn ghost" id="copyDest">Copier les destinataires</button><span class="note" id="mailInfo" style="margin:0"></span></div>
+      <div id="mailPreview" style="margin-top:12px;border:1px solid var(--line);border-radius:10px;padding:16px;background:#fff;font-family:Calibri,Arial,sans-serif;font-size:14px;color:#222;line-height:1.5"></div>
+    </div>
+  </section>
 </div>
 
 <script>
@@ -621,6 +631,50 @@ $("#reporterRem").addEventListener("click",()=>{
     .then(()=>{$("#reporterRem").textContent="Reporté ✓";$("#remrep").textContent="Vérifie l'onglet PLAN D'ACTIONS du classeur.";setTimeout(()=>$("#reporterRem").textContent="Reporter dans le plan d'actions",2500);})
     .catch(()=>{$("#reporterRem").textContent="Erreur";setTimeout(()=>$("#reporterRem").textContent="Reporter dans le plan d'actions",2000);});
 });
+
+/* ===================== MAIL HEBDOMADAIRE ===================== */
+const DIFFUSION="Mathieu Audebert <m.audebert@cdes.eu>; Aurélien Momeux <a.momeux@cdes.eu>; Thomas PETIT <t.petit@cdes.eu>; Matthieu Oudin <m.oudin@cdes.eu>; Rémy Trueba <r.trueba@cdes.eu>; Jordan Depledt <j.depledt@cdes.eu>; Daoud DAOUDI <d.daoudi@cdes.eu>; Sébastien Le Glas <s.leglas@cdes.eu>; Bertrand Rouxeau <b.rouxeau@cdes.eu>; Jaime DE ALMEIDA <j.dealmeida@cdes.eu>; David Le Gall <d.legall@cdes.eu>; Vincent Daden <v.daden@cdes.eu>; Anthony MORIN <a.morin@cdes.eu>; Maxime Bomble <m.bomble@cdes.eu>; Antoine GOURICHON <a.gourichon@cdes.eu>; Xavier MAUCOURANT <x.maucourant@cdes.eu>; Joffrey GROIZIER <j.groizier@cdes.eu>; Julien DAMBRINE <j.dambrine@cdes.eu>; Edouard DEGAIE <e.degaie@cdes.eu>; Ivan BAJURA <i.bajura@cdes.eu>; Jérôme POINSOT <j.poinsot@cdes.eu>";
+function isoWeek(d){ const dt=new Date(Date.UTC(d.getFullYear(),d.getMonth(),d.getDate())); const day=dt.getUTCDay()||7; dt.setUTCDate(dt.getUTCDate()+4-day); const ys=new Date(Date.UTC(dt.getUTCFullYear(),0,1)); return Math.ceil((((dt-ys)/86400000)+1)/7); }
+function buildMailHTML(){
+  const g=window.__global; if(!g) return null;
+  const du=toDate($("#du").value); const wk=du?isoWeek(du):"";
+  const sec=n=>{const x=(g.secteurs||[]).find(s=>(s.nom||"").indexOf(n)>=0); return x||{att:0,rec:0};};
+  const ex=sec("Exploitation"), fr=sec("Fret"), ba=sec("Bathy"), at=sec("Atelier");
+  const cov=(typeof coverage==="function")?coverage():{manquants:[]};
+  const manq=cov.manquants||[];
+  const ag=window.__agences||[];
+  const TL={BP:"Bonne pratique",PA:"Point d'amélioration",SD:"Situation dangereuse",PAT:"Presqu'accident"};
+  const rem=(REMONTEES||[]).filter(r=>r.type||r.observation||r.photo);
+  let h='';
+  h+='<p>Salut à tous,</p>';
+  h+='<p>Ci-dessous le bilan des Vigis S'+wk+'.</p>';
+  h+='<ul><li>S'+wk+' : <b style="color:#1a9e4b">'+g.pct+'% de réalisation</b></li></ul>';
+  h+='<p>'+ex.att+' chantiers comptabilisés =&gt; '+ex.rec+' Vigiminutes reçues</p>';
+  if(manq.length) h+='<p style="color:#d0342c">Manque '+manq.join(" / ")+'</p>';
+  h+='<p>Pour les autres activités : '+fr.rec+' Vigis Mariniers / '+ba.rec+' Bathymétrie / '+(at.rec?(at.rec+' Atelier'):'Pas de Vigi Atelier')+'</p>';
+  h+='<p><u>Détail par agence :</u></p><ul>';
+  ag.forEach(a=>{const p=a.att?Math.round(a.rec/a.att*100):0; h+='<li>'+a.agence+' : <b>'+p+'%</b> ('+a.rec+'/'+a.att+')</li>';});
+  h+='</ul>';
+  if(rem.length){
+    h+='<p><b><u>'+rem.length+' remontée'+(rem.length>1?'s':'')+' :</u></b></p>';
+    rem.forEach(r=>{ const t=TL[r.type]||""; const coul={BP:"#1a9e4b",PA:"#E67E22",SD:"#d0342c",PAT:"#7B241C"}[r.type]||"#222";
+      h+='<p>'+(r.chantier||"")+' : '+(sujetRem(r)||"")+(t?(' <i style="color:'+coul+'">('+t+')</i>'):'')+'</p>'; });
+  }
+  h+='<p>Bonne journée à tous.</p>';
+  return h;
+}
+$("#prepMail").addEventListener("click",()=>{
+  const h=buildMailHTML();
+  if(!h){alert("Fais d'abord l'analyse et le rapprochement (le bilan global doit être calculé). Charge aussi les remontées si tu veux les inclure.");return;}
+  $("#mailPreview").innerHTML=h; $("#mailBox").style.display="block"; $("#mailInfo").textContent="";
+});
+async function copyRich(el){
+  const html=el.innerHTML, text=el.innerText;
+  try{ await navigator.clipboard.write([new ClipboardItem({"text/html":new Blob([html],{type:"text/html"}),"text/plain":new Blob([text],{type:"text/plain"})})]); return true; }
+  catch(e){ try{ const r=document.createRange(); r.selectNode(el); const sel=getSelection(); sel.removeAllRanges(); sel.addRange(r); document.execCommand("copy"); sel.removeAllRanges(); return true; }catch(_){ return false; } }
+}
+$("#copyMail").addEventListener("click",async()=>{ const ok=await copyRich($("#mailPreview")); $("#mailInfo").textContent=ok?"Corps du mail copié (avec les couleurs).":"Copie impossible — sélectionne le texte à la main."; });
+$("#copyDest").addEventListener("click",async()=>{ try{ await navigator.clipboard.writeText(DIFFUSION); $("#mailInfo").textContent="Destinataires copiés."; }catch(e){ $("#mailInfo").textContent="Copie impossible."; } });
 </script>
 </body>
 </html>
