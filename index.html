@@ -636,7 +636,7 @@ $("#reporterRem").addEventListener("click",()=>{
 });
 
 /* ===================== MAIL HEBDOMADAIRE ===================== */
-const DIFFUSION="Mathieu Audebert <m.audebert@cdes.eu>; Aurélien Momeux <a.momeux@cdes.eu>; Thomas PETIT <t.petit@cdes.eu>; Matthieu Oudin <m.oudin@cdes.eu>; Rémy Trueba <r.trueba@cdes.eu>; Jordan Depledt <j.depledt@cdes.eu>; Daoud DAOUDI <d.daoudi@cdes.eu>; Sébastien Le Glas <s.leglas@cdes.eu>; Bertrand Rouxeau <b.rouxeau@cdes.eu>; Jaime DE ALMEIDA <j.dealmeida@cdes.eu>; David Le Gall <d.legall@cdes.eu>; Vincent Daden <v.daden@cdes.eu>; Anthony MORIN <a.morin@cdes.eu>; Maxime Bomble <m.bomble@cdes.eu>; Antoine GOURICHON <a.gourichon@cdes.eu>; Xavier MAUCOURANT <x.maucourant@cdes.eu>; Joffrey GROIZIER <j.groizier@cdes.eu>; Julien DAMBRINE <j.dambrine@cdes.eu>; Edouard DEGAIE <e.degaie@cdes.eu>; Ivan BAJURA <i.bajura@cdes.eu>; Jérôme POINSOT <j.poinsot@cdes.eu>";
+const DIFFUSION="Mathieu Audebert <m.audebert@cdes.eu>; Aurélien Momeux <a.momeux@cdes.eu>; Thomas PETIT <t.petit@cdes.eu>; Matthieu Oudin <m.oudin@cdes.eu>; Rémy Trueba <r.trueba@cdes.eu>; Jordan Depledt <j.depledt@cdes.eu>; Daoud DAOUDI <d.daoudi@cdes.eu>; Sébastien Le Glas <s.leglas@cdes.eu>; Bertrand Rouxeau <b.rouxeau@cdes.eu>; Jaime DE ALMEIDA <j.dealmeida@cdes.eu>; David Le Gall <d.legall@cdes.eu>; Vincent Daden <v.daden@cdes.eu>; Anthony MORIN <a.morin@cdes.eu>; Maxime Bomble <m.bomble@cdes.eu>; Antoine GOURICHON <a.gourichon@cdes.eu>; Xavier MAUCOURANT <x.maucourant@cdes.eu>; Joffrey GROIZIER <j.groizier@cdes.eu>; Julien DAMBRINE <j.dambrine@cdes.eu>; Edouard DEGAIE <e.degaie@cdes.eu>; Ivan BAJURA <i.bajura@cdes.eu>; Jérôme POINSOT <j.poinsot@cdes.eu>; Evan DENEUCHATEL <e.deneuchatel@cdes.eu>; Arthur VILLEMINOT <a.villeminot@cdes.eu>; Antonin WALCZAK <a.walczak@cdes.eu>; Pierre GOURVENEC <p.gourvenec@cdes.eu>";
 function isoWeek(d){ const dt=new Date(Date.UTC(d.getFullYear(),d.getMonth(),d.getDate())); const day=dt.getUTCDay()||7; dt.setUTCDate(dt.getUTCDate()+4-day); const ys=new Date(Date.UTC(dt.getUTCFullYear(),0,1)); return Math.ceil((((dt-ys)/86400000)+1)/7); }
 function buildMailHTML(){
   const g=window.__global; if(!g) return null;
@@ -662,6 +662,8 @@ function buildMailHTML(){
     h+='<p><b><u>'+rem.length+' remontée'+(rem.length>1?'s':'')+' :</u></b></p>';
     rem.forEach(r=>{ const t=TL[r.type]||""; const coul={BP:"#1a9e4b",PA:"#E67E22",SD:"#d0342c",PAT:"#7B241C"}[r.type]||"#222";
       h+='<p>'+(r.chantier||"")+' : '+(sujetRem(r)||"")+(t?(' <i style="color:'+coul+'">('+t+')</i>'):'')+'</p>'; });
+  } else {
+    h+='<p>Pas de remontée cette semaine.</p>';
   }
   h+='<p>Bonne journée à tous.</p>';
   return h;
@@ -672,9 +674,16 @@ $("#prepMail").addEventListener("click",()=>{
   $("#mailPreview").innerHTML=h; $("#mailBox").style.display="block"; $("#mailInfo").textContent="";
 });
 async function copyRich(el){
-  const html=el.innerHTML, text=el.innerText;
-  try{ await navigator.clipboard.write([new ClipboardItem({"text/html":new Blob([html],{type:"text/html"}),"text/plain":new Blob([text],{type:"text/plain"})})]); return true; }
-  catch(e){ try{ const r=document.createRange(); r.selectNode(el); const sel=getSelection(); sel.removeAllRanges(); sel.addRange(r); document.execCommand("copy"); sel.removeAllRanges(); return true; }catch(_){ return false; } }
+  // Méthode fiable pour Outlook bureau : sélection réelle du contenu rendu + execCommand copy (conserve le HTML riche)
+  try{
+    const r=document.createRange(); r.selectNodeContents(el);
+    const sel=getSelection(); sel.removeAllRanges(); sel.addRange(r);
+    const ok=document.execCommand("copy"); sel.removeAllRanges();
+    if(ok) return true;
+  }catch(_){}
+  // Fallback API Clipboard
+  try{ await navigator.clipboard.write([new ClipboardItem({"text/html":new Blob([el.innerHTML],{type:"text/html"}),"text/plain":new Blob([el.innerText],{type:"text/plain"})})]); return true; }
+  catch(e){ return false; }
 }
 $("#copyMail").addEventListener("click",async()=>{ const ok=await copyRich($("#mailPreview")); $("#mailInfo").textContent=ok?"Corps du mail copié (avec les couleurs).":"Copie impossible — sélectionne le texte à la main."; });
 $("#copyDest").addEventListener("click",async()=>{ try{ await navigator.clipboard.writeText(DIFFUSION); $("#mailInfo").textContent="Destinataires copiés."; }catch(e){ $("#mailInfo").textContent="Copie impossible."; } });
