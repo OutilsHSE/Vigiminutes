@@ -685,7 +685,7 @@ async function copyRich(el){
   try{ await navigator.clipboard.write([new ClipboardItem({"text/html":new Blob([el.innerHTML],{type:"text/html"}),"text/plain":new Blob([el.innerText],{type:"text/plain"})})]); return true; }
   catch(e){ return false; }
 }
-$("#copyMail").addEventListener("click",async()=>{ const ok=await copyRich($("#mailPreview")); $("#mailInfo").textContent=ok?"Corps du mail copié (avec les couleurs).":"Copie impossible — sélectionne le texte à la main."; });
+$("#copyMail").addEventListener("click",async()=>{ const ok=await copyRich($("#mailPreview")); $("#mailInfo").textContent=ok?"Corps copié. Dans Outlook, collez avec « Conserver la mise en forme source » pour garder les couleurs.":"Copie impossible — sélectionne le texte à la main."; });
 $("#copyDest").addEventListener("click",async()=>{ try{ await navigator.clipboard.writeText(DIFFUSION); $("#mailInfo").textContent="Destinataires copiés."; }catch(e){ $("#mailInfo").textContent="Copie impossible."; } });
 </script>
 </body>
